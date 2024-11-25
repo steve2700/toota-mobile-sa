@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from .models import User, OTP
 from .utils import generate_otp, send_otp_email
 
@@ -126,26 +127,50 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email is not verified.")
         return {'user': user}
 
+
+
 class KYCSerializer(serializers.ModelSerializer):
     """
-    Serializer for updating KYC details.
+    Serializer for updating KYC details, including optional profile picture validation.
     """
+    profile_pic = serializers.ImageField(required=False)
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'physical_address', 'profile_pic']
 
     def validate_first_name(self, value):
+        """
+        Validate that the first name contains only letters.
+        """
         if not value.isalpha():
             raise serializers.ValidationError("First name should contain only letters.")
         return value
 
     def validate_last_name(self, value):
+        """
+        Validate that the last name contains only letters.
+        """
         if not value.isalpha():
             raise serializers.ValidationError("Last name should contain only letters.")
         return value
 
     def validate_physical_address(self, value):
+        """
+        Validate that the physical address is sufficiently descriptive.
+        """
         if len(value) < 10:
-            raise serializers.ValidationError("Physical address must be descriptive.")
+            raise serializers.ValidationError("Physical address must be at least 10 characters long.")
+        return value
+
+    def validate_profile_pic(self, value):
+        """
+        Validate that the profile picture file size does not exceed 2 MB.
+        """
+        max_size_mb = 2  # Maximum file size in MB
+        max_size_bytes = max_size_mb * 1024 * 1024  # Convert MB to bytes
+
+        if value.size > max_size_bytes:
+            raise serializers.ValidationError(f"Profile picture size should not exceed {max_size_mb} MB.")
         return value
 

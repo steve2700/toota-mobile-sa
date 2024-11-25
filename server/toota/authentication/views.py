@@ -125,20 +125,30 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# JWT Authentication Header
+token_param = openapi.Parameter(
+    'Authorization', 
+    openapi.IN_HEADER,
+    description="Bearer token for authentication (Format: Bearer <token>)",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+
 class KYCUpdateView(APIView):
     """
     API View for updating KYC details.
     This endpoint allows authenticated users to update their KYC information such as profile picture and address.
     """
-
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Update KYC (Know Your Customer) details such as address and profile picture.",
+        manual_parameters=[token_param],  # Add the Authorization header here
         request_body=KYCSerializer,
         responses={
             200: openapi.Response("KYC updated successfully."),
-            400: "Invalid input or missing data."
+            400: "Invalid input or missing data.",
+            401: "Unauthorized. Authentication credentials were not provided.",
         }
     )
     def patch(self, request):
@@ -150,4 +160,3 @@ class KYCUpdateView(APIView):
             serializer.save()
             return Response({"message": "KYC updated successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
