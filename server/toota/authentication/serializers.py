@@ -69,6 +69,48 @@ class EmailVerificationSerializer(serializers.Serializer):
         user.is_active = True  # Activate user after email verification
         user.save()
 
+class ResendOTPSerializer(serializers.Serializer):
+    """
+    Serializer for resending OTP.
+    """
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        """
+        Ensure the email exists and belongs to an inactive user.
+        """
+        try:
+            user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email address.")
+
+        if user.is_active:
+            raise serializers.ValidationError("This account is already verified.")
+
+        return value
+
+    def save(self):
+        """
+        Generate and send a new OTP if allowed.
+        """
+        email = self.validated_data['email']
+        user = User.objects.get(email=email)
+
+        # Check if an OTP exists and was recently sent
+        otp, created = OTP.objects.get_or_create(user=user)
+        if not created:
+            last_sent_time = otp.created_at
+            if timezone.now() - last_sent_time < timedelta(minutes=1):  # Prevent frequent resends
+                raise serializers.ValidationError("You can request a new OTP after 1 minute.")
+
+        # Generate and send a new OTP
+        otp.code = generate_otp()
+        otp.created_at = timezone.now()
+        otp.is_verified = False  # Mark as not verified
+        otp.save()
+        send_otp_email(user.email, otp.code)  # Utilize email utility
+        return user
+
 class UserLoginSerializer(serializers.Serializer):
     """
     Serializer for user login. Returns an authentication token.

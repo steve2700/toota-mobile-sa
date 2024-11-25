@@ -10,7 +10,8 @@ from .serializers import (
     UserSignupSerializer, 
     EmailVerificationSerializer,
     UserLoginSerializer, 
-    KYCSerializer
+    KYCSerializer,
+    ResendOTPSerializer
 )
 
 class SignupView(APIView):
@@ -61,6 +62,29 @@ class VerifyEmailView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResendOTPView(APIView):
+    """
+    API View to handle resending OTP to a user's email.
+    """
+
+    @swagger_auto_schema(
+        operation_description="Resend OTP to the user's registered email.",
+        request_body=ResendOTPSerializer,
+        responses={
+            200: "OTP sent successfully.",
+            400: "Invalid request or too many OTP requests."
+        }
+    )
+    def post(self, request):
+        """
+        Handle POST request to resend OTP.
+        """
+        serializer = ResendOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "OTP sent successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
