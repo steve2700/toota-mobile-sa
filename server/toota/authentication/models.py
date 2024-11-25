@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -28,7 +28,7 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser):
     """Custom user model with email as the unique identifier."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, max_length=255)
@@ -42,7 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = []  # Add other required fields like first_name, last_name if necessary
 
     objects = UserManager()
 
@@ -63,5 +63,4 @@ class OTP(models.Model):
         """Check if the OTP is expired (e.g., after 1 hour)."""
         expiration_time = timezone.now() - timezone.timedelta(hours=1)
         return self.created_at < expiration_time
-
 

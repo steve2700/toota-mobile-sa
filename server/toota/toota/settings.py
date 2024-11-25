@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
+    "rest_framework",
     "authentication",
 ]
 
@@ -69,6 +71,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "toota.wsgi.application"
+
+# Email settings for Gmail with App Password
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587  # Use 465 for SSL, 587 for TLS
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'tootaauth@gmail.com'  # Replace with your Gmail address
+EMAIL_HOST_PASSWORD = 'kayr hvvt yvji myhx'  # Replace with the App Password you generated
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Default sender email
+
 
 
 # Database
