@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -90,6 +89,8 @@ class ResendOTPView(APIView):
             return Response({"message": "OTP sent successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+logger = logging.getLogger(__name__)
+
 class LoginView(APIView):
     """
     API View for user login.
@@ -129,14 +130,32 @@ class LoginView(APIView):
         logger.error(f"Login failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Ensure this is declared before the KYCUpdateView class
+# JWT Authentication Header
 token_param = openapi.Parameter(
-    'Authorization',
-    openapi.IN_HEADER,
-    description="Bearer token for authentication (Format: Bearer <token>)",
+    'Authorization', openapi.IN_HEADER,
+    description="Bearer token for authentication",
     type=openapi.TYPE_STRING,
     required=True
 )
+
+
+first_name_param = openapi.Parameter(
+    'first_name', openapi.IN_FORM, description="First name", type=openapi.TYPE_STRING, required=True
+)
+
+last_name_param = openapi.Parameter(
+    'last_name', openapi.IN_FORM, description="Last name", type=openapi.TYPE_STRING, required=True
+)
+
+physical_address_param = openapi.Parameter(
+    'physical_address', openapi.IN_FORM, description="Physical address", type=openapi.TYPE_STRING, required=True
+)
+
+profile_pic_param = openapi.Parameter(
+    'profile_pic', openapi.IN_FORM, description="Profile picture file upload", type=openapi.TYPE_FILE, required=False
+)
+
+logger = logging.getLogger(__name__)
 
 class KYCUpdateView(APIView):
     """
