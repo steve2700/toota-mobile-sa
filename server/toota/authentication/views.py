@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken  # For token generation
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import (
     UserSignupSerializer, 
     EmailVerificationSerializer,
@@ -127,24 +127,49 @@ class LoginView(APIView):
 
 # JWT Authentication Header
 token_param = openapi.Parameter(
-    'Authorization', 
+    'Authorization',
     openapi.IN_HEADER,
     description="Bearer token for authentication (Format: Bearer <token>)",
     type=openapi.TYPE_STRING,
     required=True
 )
 
+# JWT Authentication Header
+token_param = openapi.Parameter(
+    'Authorization',
+    openapi.IN_HEADER,
+    description="Bearer token for authentication (Format: Bearer <token>)",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+
+# Define manual parameters for form-data fields
+first_name_param = openapi.Parameter(
+    'first_name', openapi.IN_FORM, description="First name", type=openapi.TYPE_STRING, required=True
+)
+last_name_param = openapi.Parameter(
+    'last_name', openapi.IN_FORM, description="Last name", type=openapi.TYPE_STRING, required=True
+)
+physical_address_param = openapi.Parameter(
+    'physical_address', openapi.IN_FORM, description="Physical address", type=openapi.TYPE_STRING, required=True
+)
+profile_pic_param = openapi.Parameter(
+    'profile_pic', openapi.IN_FORM, description="Profile picture file upload", type=openapi.TYPE_FILE, required=False
+)
+
 class KYCUpdateView(APIView):
     """
     API View for updating KYC details.
-    This endpoint allows authenticated users to update their KYC information such as profile picture and address.
+    This endpoint allows authenticated users to update their KYC information such as
+    profile picture and address.
     """
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(
         operation_description="Update KYC (Know Your Customer) details such as address and profile picture.",
-        manual_parameters=[token_param],  # Add the Authorization header here
-        request_body=KYCSerializer,
+        manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, profile_pic_param],
+        consumes=['multipart/form-data'],  # Specify the content type
         responses={
             200: openapi.Response("KYC updated successfully."),
             400: "Invalid input or missing data.",
