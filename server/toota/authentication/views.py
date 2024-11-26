@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -87,11 +90,9 @@ class ResendOTPView(APIView):
             return Response({"message": "OTP sent successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LoginView(APIView):
     """
     API View for user login.
-    This endpoint authenticates the user and returns JWT tokens (access & refresh tokens).
     """
 
     @swagger_auto_schema(
@@ -111,57 +112,35 @@ class LoginView(APIView):
         }
     )
     def post(self, request):
-        """
-        Handles POST request for user login.
-        """
+        logger.info("LoginView POST request received.")
+        logger.debug(f"Request data: {request.data}")
+
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
+            logger.info("Serializer validated successfully.")
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
+            logger.info(f"Tokens generated for user: {user.email}")
             return Response({
                 "refresh": str(refresh),
                 "access": str(refresh.access_token)
             }, status=status.HTTP_200_OK)
+
+        logger.error(f"Login failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# JWT Authentication Header
+# Ensure this is declared before the KYCUpdateView class
 token_param = openapi.Parameter(
     'Authorization',
     openapi.IN_HEADER,
     description="Bearer token for authentication (Format: Bearer <token>)",
     type=openapi.TYPE_STRING,
     required=True
-)
-
-# JWT Authentication Header
-token_param = openapi.Parameter(
-    'Authorization',
-    openapi.IN_HEADER,
-    description="Bearer token for authentication (Format: Bearer <token>)",
-    type=openapi.TYPE_STRING,
-    required=True
-)
-
-# Define manual parameters for form-data fields
-first_name_param = openapi.Parameter(
-    'first_name', openapi.IN_FORM, description="First name", type=openapi.TYPE_STRING, required=True
-)
-last_name_param = openapi.Parameter(
-    'last_name', openapi.IN_FORM, description="Last name", type=openapi.TYPE_STRING, required=True
-)
-physical_address_param = openapi.Parameter(
-    'physical_address', openapi.IN_FORM, description="Physical address", type=openapi.TYPE_STRING, required=True
-)
-profile_pic_param = openapi.Parameter(
-    'profile_pic', openapi.IN_FORM, description="Profile picture file upload", type=openapi.TYPE_FILE, required=False
 )
 
 class KYCUpdateView(APIView):
     """
     API View for updating KYC details.
-    This endpoint allows authenticated users to update their KYC information such as
-    profile picture and address.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -177,11 +156,23 @@ class KYCUpdateView(APIView):
         }
     )
     def patch(self, request):
-        """
-        Handles PATCH request to update KYC details for an authenticated user.
-        """
+        logger.info("Received PATCH request for KYC update.")
+        logger.debug(f"Request headers: {request.headers}")
+        logger.debug(f"Request data: {request.data}")
+
+        # Check authentication
+        if not request.user.is_authenticated:
+            logger.warning("User is not authenticated.")
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
         serializer = KYCSerializer(instance=request.user, data=request.data, partial=True)
         if serializer.is_valid():
+            logger.info("Serializer validated successfully.")
             serializer.save()
+            logger.info("KYC details updated successfully.")
             return Response({"message": "KYC updated successfully."}, status=status.HTTP_200_OK)
+        
+        logger.error(f"Serializer validation failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+

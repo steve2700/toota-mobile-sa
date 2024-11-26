@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,6 +85,19 @@ EMAIL_HOST_USER = 'tootaauth@gmail.com'  # Replace with your Gmail address
 EMAIL_HOST_PASSWORD = 'kayr hvvt yvji myhx'  # Replace with the App Password you generated
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Default sender email
 
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Set access token to expire in 1 day
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Optional: Refresh token valid for 7 days
+    'ROTATE_REFRESH_TOKENS': False,             # Whether to rotate refresh tokens
+    'BLACKLIST_AFTER_ROTATION': True,           # Blacklist refresh tokens after use
+    'ALGORITHM': 'HS256',                       # Encryption algorithm
+    'SIGNING_KEY': SECRET_KEY,                  # Your Django secret key
+    'AUTH_HEADER_TYPES': ('Bearer',),           # Prefix for the token in the Authorization header
+    'USER_ID_FIELD': 'id',                      # User ID field in the token payload
+    'USER_ID_CLAIM': 'user_id',                 # User ID claim in the payload
+}
 
 
 # Database
