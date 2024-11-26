@@ -33,8 +33,8 @@ The backend of this application is built using the following technologies:
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd toota-backend
+git clone https://github.com/steve2700/toota-mobile-sa.git
+cd server/toota
 ```
 ---
 
