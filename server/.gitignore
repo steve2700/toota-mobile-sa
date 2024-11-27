@@ -1,0 +1,103 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django migrations
+**/migrations/
+
+# Django cache and other runtime data
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pid
+
+# Django static and media files
+staticfiles/
+media/
+
+# Django secret files
+.env
+*.env
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.nox/
+*.cover
+*.py,cover
+coverage.xml
+nosetests.xml
+coverage/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Database and other sensitive data
+*.sqlite3
+db.sqlite3
+__pycache__/
+
+# Redis and Channels
+*.log
+celerybeat-schedule
+celerybeat.pid
+*.sqlite
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python egg and distribution files
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Node and frontend dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker and other deployment
+docker-compose.override.yml
+*.orig
+*.bak
+*.swp
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+
