@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:equatable/equatable.dart';
 import '../../../core/app_export.dart';
 import '../model/splash_model.dart';
+import '../../../core/utils/navigator_service.dart';
 part 'splash_event.dart';
 part 'splash_state.dart';
 
