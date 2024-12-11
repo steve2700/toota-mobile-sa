@@ -3,8 +3,15 @@ import 'package:toota_mobile_sa/constants.dart';
 
 import '../../widgets/box_shadow.dart';
 
-class RoleScreen extends StatelessWidget {
+class RoleScreen extends StatefulWidget {
   const RoleScreen({super.key});
+
+  @override
+  State<RoleScreen> createState() => _RoleScreenState();
+}
+
+class _RoleScreenState extends State<RoleScreen> {
+  String? selectedRole; // Variable to store the selected role
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +65,24 @@ class RoleScreen extends StatelessWidget {
                             ),
                           ),
                           GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedRole = "Find a trip";
+                              });
+                            },
                             child: Container(
                               height: 140,
                               width: 300,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: AppColors.roleColor,
                                 borderRadius:
-                                    BorderRadius.all(Radius.circular(30)),
+                                    const BorderRadius.all(Radius.circular(30)),
+                                border: Border.all(
+                                  color: selectedRole == "Find a trip"
+                                      ? AppColors.borderOutlineColor
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
                               ),
                               child: Center(
                                 child: Column(
@@ -86,13 +104,24 @@ class RoleScreen extends StatelessWidget {
                             ),
                           ),
                           GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedRole = "Find a driver";
+                              });
+                            },
                             child: Container(
                               height: 140,
                               width: 300,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: AppColors.roleColor,
                                 borderRadius:
-                                    BorderRadius.all(Radius.circular(30)),
+                                    const BorderRadius.all(Radius.circular(30)),
+                                border: Border.all(
+                                  color: selectedRole == "Find a driver"
+                                      ? AppColors.borderOutlineColor
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
                               ),
                               child: Center(
                                 child: Column(
@@ -127,24 +156,45 @@ class RoleScreen extends StatelessWidget {
             children: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
+                  backgroundColor: selectedRole == null
+                      ? AppColors.disabledButtonColor // Disabled color
+                      : AppColors.borderOutlineColor,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 140, vertical: 18),
+                ).copyWith(
+                  // Define the disabled state explicitly
+                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (Set<WidgetState> states) {
+                      if (states.contains(WidgetState.disabled)) {
+                        return AppColors
+                            .disabledButtonColor; // Use your custom disabled color
+                      }
+                      return AppColors.primaryColor; // Default enabled color
+                    },
+                  ),
                 ),
-                onPressed: () {},
+                onPressed: selectedRole == null
+                    ? null // Disable button if no role is selected
+                    : () {
+                        // Navigate or perform actions
+                        print("Selected Role: $selectedRole");
+                      },
                 child: const Text(
                   "Continue",
                   style: TextStyle(
                     fontSize: 15,
                     fontFamily: "Inter",
-                    color: AppColors.roleContinueColor,
+                    color: AppColors.roleColor,
                   ),
                 ),
               ),
+
               const SizedBox(height: 8), // Add a small gap between the buttons
               TextButton(
                 style: TextButton.styleFrom(overlayColor: Colors.transparent),
-                onPressed: () {},
+                onPressed: () {
+                  // Handle "I already have an account" action
+                },
                 child: const Text(
                   "I already have an account",
                   style: TextStyle(
