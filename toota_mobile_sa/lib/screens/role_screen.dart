@@ -177,7 +177,7 @@ class _RoleScreenState extends State<RoleScreen> {
                     ? null // Disable button if no role is selected
                     : () {
                         // Navigate or perform actions
-                        print("Selected Role: $selectedRole");
+                        Navigator.pushNamed(context, RouteNames.welcome);
                       },
                 child: const Text(
                   "Continue",

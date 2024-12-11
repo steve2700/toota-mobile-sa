@@ -9,13 +9,13 @@ class AnimatedLoadingWidget extends StatefulWidget {
   final Duration duration; // Duration of the animation
 
   const AnimatedLoadingWidget({
-    Key? key,
+    super.key,
     required this.size,
     required this.outlineColor,
     required this.arcColor,
     required this.logoPath,
     this.duration = const Duration(seconds: 2),
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedLoadingWidget> createState() => _AnimatedLoadingWidgetState();
@@ -108,7 +108,7 @@ class MovingArcPainter extends CustomPainter {
 
     // Draw the moving arc
     final double startAngle = 2 * math.pi * progress; // Start angle of the arc
-    final double sweepAngle = math.pi / 2; // Constant arc length
+    const double sweepAngle = math.pi / 2; // Constant arc length
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius - 2),
       startAngle,
