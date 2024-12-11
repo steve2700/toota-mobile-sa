@@ -39,6 +39,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   equatable: ^2.0.7
   connectivity_plus: ^6.1.0
+  sms_autofill: ^2.4.1
 
 dev_dependencies:
   flutter_test:
