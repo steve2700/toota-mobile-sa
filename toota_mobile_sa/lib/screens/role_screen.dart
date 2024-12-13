@@ -169,7 +169,7 @@ class _RoleScreenState extends State<RoleScreen> {
                         return AppColors
                             .disabledButtonColor; // Use your custom disabled color
                       }
-                      return AppColors.primaryColor; // Default enabled color
+                      return AppColors.borderOutlineColor; // Default enabled color
                     },
                   ),
                 ),

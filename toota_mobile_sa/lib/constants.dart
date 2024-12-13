@@ -14,4 +14,5 @@ class RouteNames {
   static const String splash = '/splash';
   static const String role = '/role';
   static const String welcome = '/welcome';
+  static const String onboarding = '/onboarding';
 }

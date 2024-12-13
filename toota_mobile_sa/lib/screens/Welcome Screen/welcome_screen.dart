@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
 import 'welcome_content.dart';
-import 'create_account_button.dart';
+import 'custom_button.dart';
 import 'divider_row.dart';
 import 'social_button.dart';
 import 'already_have_account_button.dart';
@@ -27,7 +27,8 @@ class WelcomeScreen extends StatelessWidget {
           padding: const EdgeInsets.only(top: 40, left: 15),
           child: IconButton(
               style: IconButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   backgroundColor: AppColors.roleColor),
@@ -35,7 +36,8 @@ class WelcomeScreen extends StatelessWidget {
                 Navigator.pop(context);
               },
               icon: const Icon(
-                FontAwesomeIcons.arrowLeftLong,size: 19,
+                FontAwesomeIcons.arrowLeftLong,
+                size: 19,
               )),
         ),
         Positioned(
@@ -61,7 +63,14 @@ class WelcomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                CreateAccountButton(containerWidth: containerWidth),
+                CustomButton(
+                  containerWidth: containerWidth,
+                  label: "Create an account",
+                  function: () {
+                    Navigator.pushReplacementNamed(
+                        context, RouteNames.onboarding);
+                  },
+                ),
                 const DividerRow(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
