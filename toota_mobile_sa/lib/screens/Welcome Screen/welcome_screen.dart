@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
-import 'welcome_content.dart';
-import 'custom_button.dart';
-import 'divider_row.dart';
-import 'social_button.dart';
-import 'already_have_account_button.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'components/arrow_back.dart';
+import 'components/welcome_content.dart';
+import 'components/custom_button.dart';
+import 'components/divider_row.dart';
+import 'components/social_button.dart';
+import 'components/already_have_account_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -13,7 +13,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double containerWidth =
-        MediaQuery.of(context).size.width * 0.65; // 75% of screen width
+        MediaQuery.of(context).size.width * 0.65; // 65% of screen width
 
     return Stack(
       children: [
@@ -23,23 +23,7 @@ class WelcomeScreen extends StatelessWidget {
           width: double.infinity,
           height: double.infinity,
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 40, left: 15),
-          child: IconButton(
-              style: IconButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: AppColors.roleColor),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(
-                FontAwesomeIcons.arrowLeftLong,
-                size: 19,
-              )),
-        ),
+        const ArrowBack(),
         Positioned(
           bottom: -60, // Moves the ellipse down by 50 pixels
           left: 0,

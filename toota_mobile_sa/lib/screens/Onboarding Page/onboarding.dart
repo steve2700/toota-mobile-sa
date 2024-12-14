@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/screens/Onboarding%20Page/components/custom_page_indicator.dart';
 import 'package:toota_mobile_sa/screens/Onboarding%20Page/components/onboarding_components.dart';
-import 'package:toota_mobile_sa/screens/Welcome%20Screen/custom_button.dart';
+import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_button.dart';
 
 import '../../constants.dart';
 
