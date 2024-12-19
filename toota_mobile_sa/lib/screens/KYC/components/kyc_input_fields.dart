@@ -35,31 +35,52 @@ class InputField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          focusNode: focusNode,
-          textInputAction: nextFocusNode != null
-              ? TextInputAction.next
-              : TextInputAction.done, // Show "Next" or "Done" on keyboard
-          keyboardType: type,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.roleColor,
-            hintText: hintText,
-            hintStyle: const TextStyle(
-              letterSpacing: 0.5,
-              fontFamily: "Inter",
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: AppColors.inputFieldColor,
+        Theme(
+          data: Theme.of(context).copyWith(
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: AppColors.borderOutlineColor, // Cursor color
+              selectionColor: AppColors.roleColor.withOpacity(0.5),
+              selectionHandleColor: AppColors.borderOutlineColor,
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            keyboardType: type,
+            cursorColor: AppColors.borderOutlineColor,
+            textInputAction: nextFocusNode != null
+                ? TextInputAction.next
+                : TextInputAction.done,
+            onSubmitted: (value) {
+              if (value.trim().isNotEmpty) {
+                if (nextFocusNode != null) {
+                  FocusScope.of(context).requestFocus(nextFocusNode);
+                } else {
+                  focusNode.unfocus();
+                }
+              } else {
+                focusNode.requestFocus();
+              }
+            },
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: AppColors.roleColor,
+              hintText: hintText,
+              hintStyle: const TextStyle(
+                letterSpacing: 0.5,
+                fontFamily: "Inter",
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: AppColors.inputFieldColor,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ),
@@ -67,7 +88,6 @@ class InputField extends StatelessWidget {
     );
   }
 }
-
 
 // Controllers Class
 class KycControllers {
