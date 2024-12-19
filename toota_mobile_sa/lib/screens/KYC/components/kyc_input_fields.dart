@@ -42,12 +42,6 @@ class InputField extends StatelessWidget {
               ? TextInputAction.next
               : TextInputAction.done, // Show "Next" or "Done" on keyboard
           keyboardType: type,
-          onChanged: (value) {
-            // Move focus only if the field is not empty
-            if (value.isNotEmpty && nextFocusNode != null) {
-              FocusScope.of(context).requestFocus(nextFocusNode);
-            }
-          },
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.roleColor,

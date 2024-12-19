@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:toota_mobile_sa/screens/KYC/components/kyc_input_fields.dart';
+import 'package:toota_mobile_sa/screens/KYC/kyc_loading_screen.dart';
 import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_button.dart';
 import '../../constants.dart';
 import '../Welcome Screen/components/arrow_back.dart';
@@ -13,10 +14,11 @@ class KycScreenTwo extends StatefulWidget {
 }
 
 class _KycScreenTwoState extends State<KycScreenTwo> {
-  final KycControllers kycControllers = KycControllers(); // Refactored controllers
+  final KycControllers kycControllers =
+      KycControllers(); // Refactored controllers
   bool isButtonEnabled = false;
 
-    // FocusNodes for managing focus transitions
+  // FocusNodes for managing focus transitions
   final FocusNode firstNameFocus = FocusNode();
   final FocusNode lastNameFocus = FocusNode();
   final FocusNode emailFocus = FocusNode();
@@ -125,7 +127,7 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                             InputField(
+                          InputField(
                             label: "First name",
                             hintText: "Enter your first name",
                             controller: kycControllers.firstNameController,
@@ -183,7 +185,15 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
               child: CustomButton(
                 containerWidth: screenWidth * 0.80,
                 label: "Confirm route",
-                function: isButtonEnabled ? () {} : null,
+                function: isButtonEnabled
+                    ? () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const KycLoadingScreen()
+                            ));
+                      }
+                    : null,
                 color: isButtonEnabled
                     ? AppColors.borderOutlineColor
                     : AppColors.disabledButtonColor,
