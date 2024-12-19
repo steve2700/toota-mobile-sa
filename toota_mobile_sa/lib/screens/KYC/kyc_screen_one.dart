@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:toota_mobile_sa/screens/KYC/kyc_screen_two.dart';
 import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_button.dart';
 import '../../constants.dart';
 import '../Welcome Screen/components/arrow_back.dart';
@@ -85,7 +86,8 @@ class KycScreenOne extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.white, // White at the top
-                      Color.fromARGB(255, 253, 237, 214), // Orange at the bottom
+                      Color.fromARGB(
+                          255, 253, 237, 214), // Orange at the bottom
                     ],
                   ),
                 ),
@@ -106,7 +108,8 @@ class KycScreenOne extends StatelessWidget {
                             SvgAssetLoader("assets/images/lock-open.svg"),
                           ),
                           SizedBox(width: 8),
-                          Flexible( // Wrap the text in Flexible to avoid overflow
+                          Flexible(
+                            // Wrap the text in Flexible to avoid overflow
                             child: Text(
                               "Your personal information is safe with us",
                               style: TextStyle(
@@ -126,7 +129,10 @@ class KycScreenOne extends StatelessWidget {
                     CustomButton(
                       containerWidth: screenWidth * 0.88, // 88% of screen width
                       label: "Continue",
-                      function: () {},
+                      function: () {
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context) => const KycScreenTwo()));
+                      },
                     ),
 
                     // Text Button

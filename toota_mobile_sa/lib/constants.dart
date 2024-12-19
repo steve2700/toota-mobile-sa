@@ -8,6 +8,8 @@ class AppColors {
   static const Color borderOutlineColor = Color(0xFFF99E1A);
   static const Color welcomeBorderColor = Color(0xFFE2E0DE);
   static const Color googleColor = Color(0xFF6B6357);
+  static const Color avatarColor = Color(0xFFF6F6F5);
+  static const Color inputFieldColor = Color(0xFF867F75);
 }
 
 class RouteNames {
@@ -15,4 +17,6 @@ class RouteNames {
   static const String role = '/role';
   static const String welcome = '/welcome';
   static const String onboarding = '/onboarding';
+  static const String kycone = '/kycone';
+  static const String kyctwo = '/kyctwo';
 }
