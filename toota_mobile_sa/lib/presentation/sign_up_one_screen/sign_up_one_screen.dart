@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/app_export.dart';
 import '../../theme/custom_button_style.dart';
-import '../widgets/app_bar/appbar_leading_iconbutton.dart';
-import '../widgets/app_bar/custom_app_bar.dart';
-import '../widgets/custom_elevated_button.dart';
-import '../widgets/custom_outlined_button.dart';
-import '../widgets/custom_pin_code_text_field.dart';
+import '../../widgets/app_bar/app_bar_leading_iconbutton.dart';
+import '../../widgets/app_bar/custom_app_bar.dart';
+import '../../widgets/custom_elevated_button.dart';
+import '../../widgets/custom_outlined_button.dart';
+import '../../widgets/custom_pin_code_text_field.dart';
 import 'block/signup_screen_one_block.dart';
 import 'models/sign_up_screen_one_model.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
  class SignUpScreenOneScreen extends StatelessWidget {
   const SignUpScreenOneScreen({Key? key})

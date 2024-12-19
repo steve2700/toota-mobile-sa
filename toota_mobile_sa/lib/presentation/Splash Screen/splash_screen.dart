@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/app_export.dart';
-import '../block/splash_block.dart';
-import '../model/splash_model.dart';
+import '../../presentation/Splash Screen/block/splash_block.dart';
+import '../Splash Screen/model/splash_model.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -22,7 +23,7 @@ class SplashScreen extends StatelessWidget {
       builder: (context, state) {
         return SafeArea(
           child: Scaffold(
-            backgroundColor: appTheme.yellow900,
+            //backgroundColor: appTheme.yellow900,
            body: SizedBox(
   width: double.maxFinite,
   child: SingleChildScrollView(
@@ -34,18 +35,18 @@ class SplashScreen extends StatelessWidget {
         children: [
           SizedBox(height: 18.h),
           CustomImageView(
-            imagePath: ImageConstant.imgRectangle3,
+          //  imagePath: ImageConstant.imgRectangle3,
             height: 280.h,
             width: double.maxFinite,
             margin: EdgeInsets.only(left: 54.h),
           ),
           SizedBox(height: 68.h),
           _buildSpinnerSection(context),
-          SizedBox(height: 68.h),
+         // SizedBox(height: 68.h),
           CustomImageView(
-            imagePath: ImageConstant.imgRectangle4,
-            height: 280.h,
-            width: 296.h,
+         //   imagePath: ImageConstant.imgRectangle4,
+//height: 280.h,
+          //  width: 296.h,
           ),
         ],
       ),
@@ -64,11 +65,12 @@ Widget _buildSpinnerSection(BuildContext context) {
     child: Column(
       children: [
         CustomImageView(
-          imagePath: ImageConstant.imgSpinner,
-          height: 100.h,
-          width: 102.h,
+         // imagePath: ImageConstant.imgSpinner,
+        //  height: 100.h,
+        //  width: 102.h,
         ),
       ],
     ),
   );
+}
 }

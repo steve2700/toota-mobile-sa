@@ -3,6 +3,7 @@ import '../../core/app_export.dart';
 import '../../theme/custom_button_style.dart';
 import '../Sign_up_screen_two/block/sign_up_screen_two_block.dart';
 import '../Sign_up_screen_two/model/sign_up_screen_two_model.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 //widget class need to be imported next time
 
 class SignScreenTwoScreen extends StatelessWidget{
@@ -45,7 +46,7 @@ Widget build(BuildContext context) {
                           width: double.maxFinite,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary.withOpacity(0.5),
-                          ),
+                 ),
                         ),
                       ),
                       SizedBox(

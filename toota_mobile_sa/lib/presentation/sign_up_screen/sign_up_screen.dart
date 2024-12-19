@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/app_export.dart';
-import '../../core/utils/validation_functions.dart';
-import '../../theme/custom_button_style.dart';
-import '../../widgets/custom_elevated_button.dart';
-import '../../widgets/custom_outlined_button.dart';
-import '../../widgets/custom_text_form_field.dart';
+import '../../widgets/custom_image_view.dart';
 import 'block/sign_up_bloc.dart';
 import 'models/sign_up_model.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ignore_for_file: must_be_immutable
 class SignUpScreen extends StatelessWidget {
