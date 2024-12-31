@@ -93,7 +93,7 @@ class MovingArcPainter extends CustomPainter {
     final Paint outlinePaint = Paint()
       ..color = outlineColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7;
+      ..strokeWidth = 3;
 
     // Paint for the animated arc
     final Paint arcPaint = Paint()

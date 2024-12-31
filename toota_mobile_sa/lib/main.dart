@@ -5,7 +5,7 @@ import 'package:toota_mobile_sa/screens/KYC/kyc_screen_one.dart';
 
 void main() {
   runApp(const MaterialApp(
-    home: KycScreenOne(),
+    home: App(),
   ));
 }
 
@@ -21,3 +21,5 @@ class App extends StatelessWidget {
     );
   }
 }
+
+
