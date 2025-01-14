@@ -63,6 +63,7 @@ pytest==8.0.1
 pytest-asyncio==0.23.5
 pytest-cov==4.1.0
 pytest-django==4.8.0
+python-decouple==3.8
 python-dotenv==1.0.1
 python3-openid==3.2.0
 pytz==2024.1
