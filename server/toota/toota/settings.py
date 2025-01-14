@@ -1,8 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
-from decouple import config 
+from decouple import config
 import dj_database_url
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')  # Load secret key from .env
 DEBUG = config('DEBUG', default=True, cast=bool)  # Default to True if not set
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['toota-mobile-sa.onrender.com']  # Add your domain to ALLOWED_HOSTS
 
 AUTH_USER_MODEL = 'authentication.User'
 
@@ -111,4 +110,3 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
