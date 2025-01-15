@@ -9,9 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')  # Load secret key from .env
 DEBUG = config('DEBUG', default=True, cast=bool)  # Default to True if not set
 
-ALLOWED_HOSTS = ['toota-mobile-sa.onrender.com',
-                 '127.0.0.1'
-                ]  # Add your domain to ALLOWED_HOSTS
+ALLOWED_HOSTS = [
+    'toota-mobile-sa.onrender.com',  # Production domain
+    '127.0.0.1'  # Local domain (for testing)
+]  
 
 AUTH_USER_MODEL = 'authentication.User'
 
@@ -25,9 +26,11 @@ INSTALLED_APPS = [
     "drf_yasg",
     "rest_framework",
     "authentication",
+    'corsheaders',  # Added for CORS
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware should be at the top
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -112,3 +115,18 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "https://toota-mobile-sa.onrender.com",  # Production domain
+    "http://127.0.0.1:8000",  # Local domain (for testing)
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    "https://toota-mobile-sa.onrender.com",
+    "http://127.0.0.1:8000",
+]
+
