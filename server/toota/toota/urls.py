@@ -1,8 +1,12 @@
 from django.contrib import admin
-from django.urls import path, include, re_path  # <-- Add re_path here
+from django.urls import path, include, re_path
+from django.conf import settings
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+
+# Define the base URL dynamically based on the environment
+swagger_url = "http://127.0.0.1:8000" if settings.DEBUG else "https://toota-mobile-sa.onrender.com"
 
 # Define the schema view for Swagger UI
 schema_view = get_schema_view(
@@ -19,8 +23,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    # Define schemes at the schema level
-    url="https://toota-mobile-sa.onrender.com",  # Use your Render URL
+    url=swagger_url,  # Use the dynamic URL
 )
 
 urlpatterns = [
@@ -33,3 +36,4 @@ urlpatterns = [
     # path("payments/", include("payments.urls")),    # Payments-related endpoints
     # path("notifications/", include("notification.urls")),  # Notifications-related endpoints
 ]
+

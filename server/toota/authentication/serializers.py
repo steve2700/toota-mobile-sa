@@ -4,6 +4,9 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import User, OTP
 from .utils import generate_otp, send_otp_email
+from django.utils import timezone
+from datetime import timedelta
+
 
 class UserSignupSerializer(serializers.ModelSerializer):
     """
