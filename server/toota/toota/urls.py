@@ -1,12 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-
-# Define the base URL dynamically based on the environment
-swagger_url = "http://127.0.0.1:8000" if settings.DEBUG else "https://toota-mobile-sa.onrender.com"
 
 # Define the schema view for Swagger UI
 schema_view = get_schema_view(
@@ -23,17 +21,33 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    url=swagger_url,  # Use the dynamic URL
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
-    re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
-    path("auth/", include("authentication.urls")),  # Authentication-related endpoints
-    # path("trips/", include("trips.urls")),          # Trips-related endpoints
-    # path("payments/", include("payments.urls")),    # Payments-related endpoints
-    # path("notifications/", include("notification.urls")),  # Notifications-related endpoints
+    # Swagger Documentation (dynamic URL based on request)
+    re_path(
+        r"^swagger(?P<format>\.json|\.yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    path(
+        "swagger/",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="swagger-ui",
+    ),
+    path(
+        "redoc/",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc",
+    ),
+    path("auth/", include("authentication.urls")),
+    # Additional endpoints
+    # path("trips/", include("trips.urls")),
+    # path("payments/", include("payments.urls")),
+    # path("notifications/", include("notification.urls")),
 ]
 
+# Serve static files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
