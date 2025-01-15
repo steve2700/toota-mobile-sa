@@ -1,12 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
-from django.conf import settings
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# Define the base URL dynamically based on the environment
-swagger_url = "http://127.0.0.1:8000" if settings.DEBUG else "https://toota-mobile-sa.onrender.com"
+# Use the production URL as the default for Swagger
+swagger_url = "https://toota-mobile-sa.onrender.com"
 
 # Define the schema view for Swagger UI
 schema_view = get_schema_view(
@@ -23,7 +22,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    url=swagger_url,  # Use the dynamic URL
+    url=swagger_url,  # Static URL for production
 )
 
 urlpatterns = [
@@ -32,6 +31,7 @@ urlpatterns = [
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path("auth/", include("authentication.urls")),  # Authentication-related endpoints
+    # Uncomment the following when the apps are ready:
     # path("trips/", include("trips.urls")),          # Trips-related endpoints
     # path("payments/", include("payments.urls")),    # Payments-related endpoints
     # path("notifications/", include("notification.urls")),  # Notifications-related endpoints
