@@ -66,7 +66,7 @@ python manage.py runserver
 ### API Documentation
 Explore the API endpoints by accessing the Swagger documentation:
 ```bash
-http://127.0.0.1:8000/swagger-docs/
+http://127.0.0.1:8000/swagger-docs/ or production level  https://toota-mobile-sa.onrender.com/swagger/
 ```
 
 
