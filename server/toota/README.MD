@@ -10,6 +10,10 @@
   - [Start the Server](#5-start-the-server)
 - [API Documentation](#api-documentation)
 - [Authentication and Endpoints](#authentication-and-endpoints)
+- [Environment Variables Setup](#environment-variables-setup)
+  - [Overview of `.env` File](#overview-of-env-file)
+  - [How to Set Up Email Credentials](#how-to-set-up-email-credentials)
+  - [How to Set Up the Database with Supabase](#how-to-set-up-the-database-with-supabase)
 
 # Toota Backend Server
 
@@ -81,8 +85,10 @@ EMAIL_HOST_USER=@gmail.com
 EMAIL_HOST_PASSWORD=your_app_password_here
 DATABASE_URL=postgresql://username:password@hostname:port/dbname
 DIRECT_URL=postgresql://username:password@hostname:port/dbname
-### How to Set Up Email Credentials
 ```
+
+### How to Set Up Email Credentials
+
 1. **Create a Gmail Account**  
    - If you don't already have a Gmail account, [create one here](https://accounts.google.com/signup).
 
