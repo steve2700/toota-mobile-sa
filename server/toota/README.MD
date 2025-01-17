@@ -67,12 +67,12 @@ python manage.py runserver
 Explore the API endpoints by accessing the Swagger documentation:
 ```bash
 http://127.0.0.1:8000/swagger-docs/ or production level  https://toota-mobile-sa.onrender.com/swagger/
-
+```
 ## Environment Variables Setup
 
-### Overview of `.env` File
+### Overview of .env File
 
-The `.env` file is used to store sensitive environment variables. Below is an example structure for the `.env` file:
+The env file is used to store sensitive environment variables. Below is an example structure for the .env file:
 
 ```
 SECRET_KEY=django-insecure-hbmce+fcnw4$$^fcf$#7wb3l_#^+mcx7jzy51lc8h8q=*5)a)a
@@ -95,12 +95,12 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
      - Copy the generated password.
 
 3. **Update the `.env` File**:  
-   - Add the following variables to your `.env` file:
+   - Add the following variables to your .env file:
      ```
      EMAIL_HOST_USER=your_email@gmail.com
      EMAIL_HOST_PASSWORD=your_generated_app_password
      ```
-   - Replace `your_email@gmail.com` with your Gmail address and `your_generated_app_password` with the password generated in Step 2.
+   - Replace your_email@gmail.com with your Gmail address and your_generated_app_password with the password generated in Step 2.
 
 --- 
 
