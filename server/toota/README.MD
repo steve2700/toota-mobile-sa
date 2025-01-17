@@ -101,7 +101,7 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
      EMAIL_HOST_PASSWORD=your_generated_app_password
      ```
    - Replace `your_email@gmail.com` with your Gmail address and `your_generated_app_password` with the password generated in Step 2.
-
+```
 --- 
 
 ### How to Set Up the Database with Supabase
