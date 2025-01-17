@@ -67,7 +67,7 @@ python manage.py runserver
 Explore the API endpoints by accessing the Swagger documentation:
 ```bash
 http://127.0.0.1:8000/swagger-docs/ or production level  https://toota-mobile-sa.onrender.com/swagger/
-```
+
 ## Environment Variables Setup
 
 ### Overview of `.env` File
@@ -101,7 +101,7 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
      EMAIL_HOST_PASSWORD=your_generated_app_password
      
    - Replace `your_email@gmail.com` with your Gmail address and `your_generated_app_password` with the password generated in Step 2.
-
+```
 --- 
 
 ### How to Set Up the Database with Supabase
