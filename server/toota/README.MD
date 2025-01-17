@@ -74,7 +74,7 @@ http://127.0.0.1:8000/swagger-docs/ or production level  https://toota-mobile-sa
 
 The `.env` file is used to store sensitive environment variables. Below is an example structure for the `.env` file:
 
-```plaintext
+```
 SECRET_KEY=django-insecure-hbmce+fcnw4$$^fcf$#7wb3l_#^+mcx7jzy51lc8h8q=*5)a)a
 DEBUG=True
 EMAIL_HOST_USER=@gmail.com
@@ -82,7 +82,7 @@ EMAIL_HOST_PASSWORD=your_app_password_here
 DATABASE_URL=postgresql://username:password@hostname:port/dbname
 DIRECT_URL=postgresql://username:password@hostname:port/dbname
 ### How to Set Up Email Credentials
-
+```
 1. **Create a Gmail Account**  
    - If you don't already have a Gmail account, [create one here](https://accounts.google.com/signup).
 
@@ -96,12 +96,12 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
 
 3. **Update the `.env` File**:  
    - Add the following variables to your `.env` file:
-     ```plaintext
+     ```
      EMAIL_HOST_USER=your_email@gmail.com
      EMAIL_HOST_PASSWORD=your_generated_app_password
-     
+     ```
    - Replace `your_email@gmail.com` with your Gmail address and `your_generated_app_password` with the password generated in Step 2.
-```
+
 --- 
 
 ### How to Set Up the Database with Supabase
