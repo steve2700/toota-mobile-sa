@@ -12,7 +12,7 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError(_("The Email field must be set"))
         email = self.normalize_email(email)
-        extra_fields.setdefault('is_active', False)  # User must verify email
+        extra_fields.setdefault('is_active', False)  # Email verification required
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -29,6 +29,7 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+
 # Client User Model
 class User(AbstractBaseUser):
     """Custom user model for clients."""
@@ -37,6 +38,7 @@ class User(AbstractBaseUser):
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     physical_address = models.TextField(blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     is_active = models.BooleanField(default=False)  # Email verification required
     is_staff = models.BooleanField(default=False)
@@ -50,6 +52,7 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return self.email
+
 
 # Driver Manager
 class DriverManager(BaseUserManager):
@@ -65,6 +68,7 @@ class DriverManager(BaseUserManager):
         driver.save(using=self._db)
         return driver
 
+
 # Driver Model
 class Driver(AbstractBaseUser):
     """Custom user model for drivers."""
@@ -72,8 +76,11 @@ class Driver(AbstractBaseUser):
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
+    physical_address = models.TextField(blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     license_number = models.CharField(max_length=50, unique=True)
     license_expiry = models.DateField()
+    license_file = models.FileField(upload_to='driver_licenses/', blank=True, null=True)
     vehicle_type = models.CharField(
         max_length=50,
         choices=[
@@ -85,16 +92,29 @@ class Driver(AbstractBaseUser):
             ('8 ton Truck', '8 ton Truck'),
         ]
     )
+    vehicle_load_capacity = models.CharField(
+        max_length=50,
+        choices=[
+            ('500 kg', '500 kg'),
+            ('1 ton', '1 ton'),
+            ('2 tons', '2 tons'),
+            ('5 tons', '5 tons'),
+            ('10 tons', '10 tons'),
+        ],
+        blank=True,
+        null=True
+    )
     vehicle_registration = models.CharField(max_length=50, unique=True)
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
-    number_plate = models.CharField(max_length=50, unique=True)  # Ensuring it's unique
+    number_plate = models.CharField(max_length=50, unique=True)
     profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
-    is_active = models.BooleanField(default=False)  # Must be vetted
-    is_staff = models.BooleanField(default=False)
     current_location = models.CharField(max_length=255, blank=True, null=True)
+    is_online = models.BooleanField(default=False)  # Track online status
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_active = models.BooleanField(default=False)  # Must be vetted
+    is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -105,6 +125,7 @@ class Driver(AbstractBaseUser):
 
     def __str__(self):
         return f"{self.email} - {self.vehicle_type}"
+
 
 # OTP Model
 class OTP(models.Model):
