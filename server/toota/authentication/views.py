@@ -13,7 +13,10 @@ from .serializers import (
     EmailVerificationSerializer,
     UserLoginSerializer, 
     KYCSerializer,
-    ResendOTPSerializer
+    ResendOTPSerializer,
+    DriverSignupSerializer,
+    DriverEmailVerificationSerializer,
+    DriverLoginSerializer
 )
 
 class SignupView(APIView):
@@ -194,4 +197,87 @@ class KYCUpdateView(APIView):
         logger.error(f"Serializer validation failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Driver Signup View
+class DriverSignupView(APIView):
+    """
+    API View to handle driver signup.
+    """
+
+    @swagger_auto_schema(
+        operation_description="Register a new driver. An OTP will be sent to the driver's email for verification.",
+        request_body=DriverSignupSerializer,
+        responses={
+            201: openapi.Response("Signup successful. Check your email for OTP."),
+            400: "Invalid input or driver already exists."
+        }
+    )
+    def post(self, request):
+        serializer = DriverSignupSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Signup successful. Check your email for OTP."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Driver Email Verification View
+class DriverEmailVerificationView(APIView):
+    """
+    API View to verify driver's email using OTP.
+    """
+
+    @swagger_auto_schema(
+        operation_description="Verify the driver's email with the OTP sent to the email address.",
+        request_body=DriverEmailVerificationSerializer,
+        responses={
+            200: openapi.Response("Email verified successfully."),
+            400: "Invalid email or OTP provided."
+        }
+    )
+    def post(self, request):
+        serializer = DriverEmailVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Driver Login View
+class DriverLoginView(APIView):
+    """
+    API View for driver login.
+    """
+
+    @swagger_auto_schema(
+        operation_description="Authenticate the driver and provide JWT tokens for access.",
+        request_body=DriverLoginSerializer,
+        responses={
+            200: openapi.Response(
+                "Login successful, returns JWT tokens (access and refresh).",
+                examples={
+                    "application/json": {
+                        "refresh": "refresh_token_here",
+                        "access": "access_token_here"
+                    }
+                }
+            ),
+            400: "Invalid email or password."
+        }
+    )
+    def post(self, request):
+        logger.info("DriverLoginView POST request received.")
+        logger.debug(f"Request data: {request.data}")
+
+        serializer = DriverLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            logger.info("Serializer validated successfully.")
+            driver = serializer.validated_data['driver']
+            refresh = RefreshToken.for_user(driver)
+            logger.info(f"Tokens generated for driver: {driver.email}")
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token)
+            }, status=status.HTTP_200_OK)
+
+        logger.error(f"Login failed: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

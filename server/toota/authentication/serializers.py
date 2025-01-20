@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from .models import User, OTP
+from .models import User,Driver, OTP
 from .utils import generate_otp, send_otp_email
 
 class UserSignupSerializer(serializers.ModelSerializer):
@@ -173,4 +173,130 @@ class KYCSerializer(serializers.ModelSerializer):
         if value.size > max_size_bytes:
             raise serializers.ValidationError(f"Profile picture size should not exceed {max_size_mb} MB.")
         return value
+class DriverSignupSerializer(serializers.ModelSerializer):
+    """
+    Serializer for driver signup. Handles email and password only.
+    """
+    password = serializers.CharField(write_only=True, min_length=8, max_length=128)
 
+    class Meta:
+        model = Driver
+        fields = ['email', 'password']
+
+    def validate_email(self, value):
+        """
+        Validate that the email is properly formatted and not already registered.
+        """
+        validate_email(value)
+        if Driver.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
+
+    def validate_password(self, value):
+        """
+        Validate that the password meets security requirements.
+        """
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not any(char.isalpha() for char in value):
+            raise serializers.ValidationError("Password must contain at least one letter.")
+        return value
+
+    def create(self, validated_data):
+        driver = Driver.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+        otp_code = generate_otp()
+        OTP.objects.create(user=driver, code=otp_code)
+        send_otp_email(driver.email, otp_code)
+        return driver
+
+
+class DriverLoginSerializer(serializers.Serializer):
+    """
+    Serializer for driver login. Returns an authentication token.
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        driver = authenticate(email=data['email'], password=data['password'])
+        if not driver or not isinstance(driver, Driver):  # Ensure driver exists
+            raise serializers.ValidationError("Invalid email or password.")
+        if not driver.is_active:
+            raise serializers.ValidationError("Email is not verified.")
+        return {'driver': driver}
+
+
+class DriverEmailVerificationSerializer(serializers.Serializer):
+    """
+    Serializer for verifying email with OTP.
+    """
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=4)
+
+    def validate(self, data):
+        try:
+            driver = Driver.objects.get(email=data['email'])
+            otp = OTP.objects.get(user=driver, code=data['otp'])
+            if otp.is_expired():
+                raise serializers.ValidationError("OTP has expired.")
+            if otp.is_verified:
+                raise serializers.ValidationError("OTP is already verified.")
+        except (Driver.DoesNotExist, OTP.DoesNotExist):
+            raise serializers.ValidationError("Invalid email or OTP.")
+        return data
+
+    def save(self):
+        driver = Driver.objects.get(email=self.validated_data['email'])
+        otp = OTP.objects.get(user=driver, code=self.validated_data['otp'])
+        otp.is_verified = True
+        otp.save()
+        driver.is_active = True  # Activate driver after email verification
+        driver.save()
+
+
+class DriverResendOTPSerializer(serializers.Serializer):
+    """
+    Serializer for resending OTP to drivers.
+    """
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        """
+        Ensure the email exists and belongs to an inactive driver.
+        """
+        try:
+            driver = Driver.objects.get(email=value)
+        except Driver.DoesNotExist:
+            raise serializers.ValidationError("No driver found with this email address.")
+
+        if driver.is_active:
+            raise serializers.ValidationError("This account is already verified.")
+
+        return value
+
+    def save(self):
+        """
+        Generate and send a new OTP if allowed.
+        """
+        email = self.validated_data['email']
+        driver = Driver.objects.get(email=email)
+
+        # Check if an OTP exists and was recently sent
+        otp, created = OTP.objects.get_or_create(user=driver)
+        if not created:
+            last_sent_time = otp.created_at
+            if timezone.now() - last_sent_time < timedelta(minutes=1):  # Prevent frequent resends
+                raise serializers.ValidationError("You can request a new OTP after 1 minute.")
+
+        # Generate and send a new OTP
+        otp.code = generate_otp()
+        otp.created_at = timezone.now()
+        otp.is_verified = False  # Mark as not verified
+        otp.save()
+        send_otp_email(driver.email, otp.code)
+        return driver
