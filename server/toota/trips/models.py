@@ -45,3 +45,13 @@ class Vehicle(models.Model):
     def __str__(self):
         return f"{self.vehicle_type} - {self.capacity_in_tons} tons"
 
+class DriverProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver_profile')
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPES, help_text="Type of vehicle the driver operates")
+    current_location = models.CharField(max_length=255, null=True, blank=True, help_text="Current location of the driver")
+    is_available = models.BooleanField(default=True, help_text="Whether the driver is available for trips")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.vehicle_type}"
