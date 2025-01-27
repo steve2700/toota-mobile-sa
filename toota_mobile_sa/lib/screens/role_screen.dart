@@ -169,7 +169,7 @@ class _RoleScreenState extends State<RoleScreen> {
                         return AppColors
                             .disabledButtonColor; // Use your custom disabled color
                       }
-                      return AppColors.primaryColor; // Default enabled color
+                      return AppColors.borderOutlineColor; // Default enabled color
                     },
                   ),
                 ),
@@ -177,7 +177,7 @@ class _RoleScreenState extends State<RoleScreen> {
                     ? null // Disable button if no role is selected
                     : () {
                         // Navigate or perform actions
-                        print("Selected Role: $selectedRole");
+                        Navigator.pushNamed(context, RouteNames.welcome);
                       },
                 child: const Text(
                   "Continue",

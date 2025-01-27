@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:toota_mobile_sa/presentation/screens/splash_screen.dart';
+import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/routes.dart';
 
 void main() {
-  runApp(const App());
+  runApp(const MaterialApp(
+    home: App(),
+  ));
 }
 
 class App extends StatelessWidget {
@@ -10,9 +13,12 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      initialRoute: RouteNames.splash, // Initial route
+      routes: getAppRoutes(), // Use routes from routes.dart
     );
   }
 }
+
+

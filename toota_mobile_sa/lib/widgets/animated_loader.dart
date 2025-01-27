@@ -5,17 +5,16 @@ class AnimatedLoadingWidget extends StatefulWidget {
   final double size; // Size of the widget
   final Color outlineColor; // Color of the static circle outline
   final Color arcColor; // Color of the animated arc
-  final String logoPath; // Path to the logo
   final Duration duration; // Duration of the animation
+  final String logoPath;
 
   const AnimatedLoadingWidget({
-    Key? key,
+    super.key,
     required this.size,
     required this.outlineColor,
     required this.arcColor,
-    required this.logoPath,
-    this.duration = const Duration(seconds: 2),
-  }) : super(key: key);
+    this.duration = const Duration(seconds: 2), required this.logoPath,
+  });
 
   @override
   State<AnimatedLoadingWidget> createState() => _AnimatedLoadingWidgetState();
@@ -65,8 +64,8 @@ class _AnimatedLoadingWidgetState extends State<AnimatedLoadingWidget>
           // Logo at the center
           Image.asset(
             widget.logoPath,
-            width: widget.size * 1.5,
-            height: widget.size * 1.5,
+            width: widget.size * 1.0,
+            height: widget.size * 1.0,
           ),
         ],
       ),
@@ -94,7 +93,7 @@ class MovingArcPainter extends CustomPainter {
     final Paint outlinePaint = Paint()
       ..color = outlineColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
+      ..strokeWidth = 3;
 
     // Paint for the animated arc
     final Paint arcPaint = Paint()
@@ -104,11 +103,11 @@ class MovingArcPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // Draw the static circle outline
-    canvas.drawCircle(center, radius - 2, outlinePaint);
+    canvas.drawCircle(center, radius - 3, outlinePaint);
 
     // Draw the moving arc
     final double startAngle = 2 * math.pi * progress; // Start angle of the arc
-    final double sweepAngle = math.pi / 2; // Constant arc length
+    const double sweepAngle = math.pi / 3; // Constant arc length
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius - 2),
       startAngle,
