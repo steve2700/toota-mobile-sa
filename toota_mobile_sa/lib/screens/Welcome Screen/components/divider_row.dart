@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../constants.dart';
 
 class DividerRow extends StatelessWidget {
-  const DividerRow({Key? key}) : super(key: key);
+  const DividerRow({super.key});
 
   @override
   Widget build(BuildContext context) {

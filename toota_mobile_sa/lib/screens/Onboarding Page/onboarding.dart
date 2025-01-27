@@ -6,6 +6,8 @@ import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_butto
 import '../../constants.dart';
 
 class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
   @override
   _OnboardingScreenState createState() => _OnboardingScreenState();
 }

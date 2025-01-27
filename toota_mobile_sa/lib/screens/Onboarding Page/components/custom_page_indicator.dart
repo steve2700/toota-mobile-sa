@@ -5,7 +5,7 @@ class CustomPageIndicator extends StatelessWidget {
   final PageController controller;
   final int pageCount;
 
-  const CustomPageIndicator({
+  const CustomPageIndicator({super.key, 
     required this.controller,
     required this.pageCount,
   });
@@ -29,9 +29,9 @@ class CustomPageIndicator extends StatelessWidget {
             )!;
 
             return AnimatedContainer(
-              duration: Duration(milliseconds: 300), // Slightly longer for smoothness
+              duration: const Duration(milliseconds: 300), // Slightly longer for smoothness
               curve: Curves.easeOut, // Smooth ease-out transition
-              margin: EdgeInsets.symmetric(horizontal: 5),
+              margin: const EdgeInsets.symmetric(horizontal: 5),
               height: 9,
               width: size,
               decoration: BoxDecoration(

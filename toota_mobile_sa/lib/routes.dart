@@ -13,9 +13,9 @@ Map<String, WidgetBuilder> getAppRoutes() {
     RouteNames.splash: (context) => const SplashScreen(),
     RouteNames.role: (context) => const RoleScreen(),
     RouteNames.welcome: (context) => const WelcomeScreen(),
-    RouteNames.onboarding: (context) =>  OnboardingScreen(),
-    RouteNames.kycone: (context) => KycScreenOne(),
-     RouteNames.kyctwo: (context) => KycScreenTwo(),
+    RouteNames.onboarding: (context) =>  const OnboardingScreen(),
+    RouteNames.kycone: (context) => const KycScreenOne(),
+     RouteNames.kyctwo: (context) => const KycScreenTwo(),
     // Add more routes as needed
   };
 }
