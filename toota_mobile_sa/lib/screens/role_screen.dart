@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/router/routes.dart';
 
 import '../../widgets/box_shadow.dart';
 
@@ -169,7 +171,8 @@ class _RoleScreenState extends State<RoleScreen> {
                         return AppColors
                             .disabledButtonColor; // Use your custom disabled color
                       }
-                      return AppColors.borderOutlineColor; // Default enabled color
+                      return AppColors
+                          .borderOutlineColor; // Default enabled color
                     },
                   ),
                 ),
@@ -177,7 +180,7 @@ class _RoleScreenState extends State<RoleScreen> {
                     ? null // Disable button if no role is selected
                     : () {
                         // Navigate or perform actions
-                        Navigator.pushNamed(context, RouteNames.welcome);
+                        context.push(const WelcomeRoute().location);
                       },
                 child: const Text(
                   "Continue",

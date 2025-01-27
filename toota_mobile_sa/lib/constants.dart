@@ -11,12 +11,3 @@ class AppColors {
   static const Color avatarColor = Color(0xFFF6F6F5);
   static const Color inputFieldColor = Color(0xFF867F75);
 }
-
-class RouteNames {
-  static const String splash = '/splash';
-  static const String role = '/role';
-  static const String welcome = '/welcome';
-  static const String onboarding = '/onboarding';
-  static const String kycone = '/kycone';
-  static const String kyctwo = '/kyctwo';
-}

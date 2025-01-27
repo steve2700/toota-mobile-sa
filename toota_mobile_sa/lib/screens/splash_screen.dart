@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/router/routes.dart';
+
 import '../../widgets/animated_loader.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -24,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Navigate to the next screen after the fade effect
       Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.pushReplacementNamed(context, RouteNames.role);
+        context.go(const RoleRoute().location);
       });
     });
   }
@@ -62,7 +65,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 size: 150,
                 outlineColor: Colors.white,
                 arcColor: Colors.orange,
-                duration: Duration(seconds: 3), logoPath: 'assets/images/splash_icon.png',
+                duration: Duration(seconds: 3),
+                logoPath: 'assets/images/splash_icon.png',
               ),
             ),
           ],
@@ -71,4 +75,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-

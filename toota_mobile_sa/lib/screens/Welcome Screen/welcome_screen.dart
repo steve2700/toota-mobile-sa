@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:toota_mobile_sa/constants.dart';
+import 'package:go_router/go_router.dart';
+import 'package:toota_mobile_sa/router/routes.dart';
+
+import 'components/already_have_account_button.dart';
 import 'components/arrow_back.dart';
-import 'components/welcome_content.dart';
 import 'components/custom_button.dart';
 import 'components/divider_row.dart';
 import 'components/social_button.dart';
-import 'components/already_have_account_button.dart';
+import 'components/welcome_content.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -51,8 +53,7 @@ class WelcomeScreen extends StatelessWidget {
                   containerWidth: containerWidth,
                   label: "Create an account",
                   function: () {
-                    Navigator.pushReplacementNamed(
-                        context, RouteNames.onboarding);
+                    context.push(const OnboardingRoute().location);
                   },
                 ),
                 const DividerRow(),
