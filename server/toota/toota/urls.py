@@ -4,7 +4,10 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# Swagger Schema View
+# Use the production URL as the default for Swagger
+swagger_url = "https://toota-mobile-sa.onrender.com"
+
+# Define the schema view for Swagger UI
 schema_view = get_schema_view(
     openapi.Info(
         title="Toota API Documentation",
@@ -18,17 +21,18 @@ schema_view = get_schema_view(
         license=openapi.License(name="BSD License"),
     ),
     public=True,
-    permission_classes=[permissions.AllowAny],
+    permission_classes=(permissions.AllowAny,),
+    url=swagger_url,  # Static URL for production
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("swagger-docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path("auth/", include("authentication.urls")),  # Authentication-related endpoints
-    #path("trips/", include("trips.urls")),          # Trips-related endpoints
-    #path("payments/", include("payments.urls")),    # Payments-related endpoints
-    #path("notifications/", include("notification.urls")),  # Notifications-related endpoints
+    # Uncomment the following when the apps are ready:
+    # path("trips/", include("trips.urls")),          # Trips-related endpoints
+    # path("payments/", include("payments.urls")),    # Payments-related endpoints
+    # path("notifications/", include("notification.urls")),  # Notifications-related endpoints
 ]
-
