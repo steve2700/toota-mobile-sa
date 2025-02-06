@@ -41,6 +41,7 @@ dependencies:
   connectivity_plus: ^6.1.0
   sms_autofill: ^2.4.1
   flutter_screenutil: ^5.9.3
+  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:
