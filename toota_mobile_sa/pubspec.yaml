@@ -41,9 +41,13 @@ dependencies:
   connectivity_plus: ^6.1.0
   sms_autofill: ^2.4.1
   flutter_screenutil: ^5.9.3
+<<<<<<< HEAD
   font_awesome_flutter: ^10.8.0
   smooth_page_indicator: ^1.2.0+3
 
+=======
+  flutter_riverpod: ^2.6.1
+>>>>>>> 17d2d4f (swapping the code structure from block in to Riverpod design for consistency)
 
 dev_dependencies:
   flutter_test:
