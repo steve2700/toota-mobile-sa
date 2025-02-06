@@ -19,4 +19,5 @@ class RouteNames {
   static const String onboarding = '/onboarding';
   static const String kycone = '/kycone';
   static const String kyctwo = '/kyctwo';
+  static const String signUpOne = '/signUpOne';
 }
