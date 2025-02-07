@@ -17,11 +17,11 @@ class SignUpScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
+            Center(
               child: CircleAvatar(
                 radius: 36,
                 backgroundColor: Colors.orange,
-                child: Icon(Icons.directions_car, size: 36, color: Colors.white),
+                child: Image.asset('assets/images/icon.png', width: 36, height: 36),
               ),
             ),
             const SizedBox(height: 24),
@@ -73,7 +73,7 @@ class SignUpScreen extends ConsumerWidget {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset('../../../assets/images/google.png', width: 24, height: 24),
+                  icon: Image.asset('assets/images/google.png', width: 24, height: 24),
                   label: const Text('Google'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
@@ -82,7 +82,7 @@ class SignUpScreen extends ConsumerWidget {
                 ),
                 ElevatedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset('../../../assets/apple.png', width: 24, height: 24),
+                  icon: Image.asset('assets/apple.png', width: 24, height: 24),
                   label: const Text('Apple'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,

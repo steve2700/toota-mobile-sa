@@ -2,29 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
+final locationProvider = StateProvider<String>((ref) => 'Sandton');
+final vehicleArrivalProvider = StateProvider<int>((ref) => 30);
 
-
-class DashboardThreeScreen extends ConsumerWidget {
-  const DashboardThreeScreen({super.key});
-
+class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final location = ref.watch(locationProvider);
+    final arrivalTime = ref.watch(vehicleArrivalProvider);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Welcome Thabo', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Current Location: Sandton', style: TextStyle(color: Colors.orange, fontSize: 14)),
-          ],
-        ),
+        backgroundColor: Colors.white,
+        title: Text('Welcome Thabo', style: TextStyle(color: Colors.black)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black),
+            icon: Icon(Icons.notifications_none, color: Colors.black),
             onPressed: () {},
-          ),
+          )
         ],
       ),
       body: Padding(
@@ -32,112 +29,94 @@ class DashboardThreeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Current Location: $location', style: TextStyle(color: Colors.orange)),
+            SizedBox(height: 10),
             TextField(
               decoration: InputDecoration(
                 hintText: "What's your pickup location...",
-                prefixIcon: const Icon(Icons.search, color: Colors.orange),
-                suffixIcon: const Icon(Icons.account_circle, color: Colors.orange),
-                filled: true,
-                fillColor: Colors.grey[200],
+                prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text('Quick actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
+            SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                quickActionButton('Request trip', Icons.directions_car),
-                quickActionButton('Schedule trip', Icons.schedule),
-                quickActionButton('Track trip', Icons.location_on),
+                QuickActionButton(icon: Icons.directions_car, label: 'Request trip'),
+                QuickActionButton(icon: Icons.schedule, label: 'Schedule trip'),
+                QuickActionButton(icon: Icons.track_changes, label: 'Track trip'),
               ],
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Heading to Pickup point', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        onPressed: () {},
+            SizedBox(height: 20),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  children: [
+                    Image.asset('assets/images/truck_2.png', width: 50, height: 50),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Heading to Pickup Point', style: TextStyle(fontWeight: FontWeight.bold)),
+                          SizedBox(height: 5),
+                          Text('Your vehicle arrives in $arrivalTime mins'),
+                          Text('2024 FAW 3.5 Ton - NP 1245 MP'),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Your vehicle arrives in 30mins'),
-                  const SizedBox(height: 4),
-                  const Text('2024 FAW 3.5 Ton - NP 1245 MP'),
-                  const SizedBox(height: 10),
-                  const LinearProgressIndicator(value: 0.6, backgroundColor: Colors.white, color: Colors.orange),
-                ],
+                    ),
+                    Icon(Icons.close, color: Colors.grey),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text('Recent trips', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('see all', style: TextStyle(color: Colors.orange)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('15 Fox Street → 48 William Street', style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('R1000.00 • 24th Oct 24 • 21:00', style: TextStyle(color: Colors.grey)),
-                ],
-              ),
+            SizedBox(height: 20),
+            Text('Recent Trips', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ListTile(
+              leading: Icon(Icons.location_on, color: Colors.orange),
+              title: Text('15 Fox Street → 48 William Street'),
+              subtitle: Text('R1000.00 · 24th Oct 24 · 21:00'),
+              trailing: Icon(Icons.refresh, color: Colors.grey),
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const [
+        selectedItemColor: Colors.orange,
+        unselectedItemColor: Colors.grey,
+        items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
           BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
       ),
     );
   }
+}
 
-  Widget quickActionButton(String title, IconData icon) {
+class QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  QuickActionButton({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.orange[100],
-            borderRadius: BorderRadius.circular(10),
-          ),
+        CircleAvatar(
+          backgroundColor: Colors.orange.shade100,
           child: Icon(icon, color: Colors.orange),
         ),
-        const SizedBox(height: 5),
-        Text(title, style: const TextStyle(fontSize: 12)),
+        SizedBox(height: 5),
+        Text(label, style: TextStyle(fontSize: 12)),
       ],
     );
   }
