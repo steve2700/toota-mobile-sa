@@ -21,4 +21,6 @@ class RouteNames {
   static const String kyctwo = '/kyctwo';
   static const String signUpOne = '/signUpOne';
   static const String signUp = '/signUp';
+  static const String login = '/login';
+  static const String dashboard = '/dashboard';
 }
