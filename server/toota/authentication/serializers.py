@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.timezone import timedelta
 from .models import User,Driver, OTP

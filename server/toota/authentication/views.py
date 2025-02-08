@@ -19,7 +19,6 @@ from .serializers import (
     DriverLoginSerializer,
     DriverCheckSerializer
 )
-from .models import DriverCheck
 from .util.verification import (extract_text, compare_faces, 
                                 extract_expiry_date,validate_expiry,
                                 get_dynamic_threshold,detect_watermark)
