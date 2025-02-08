@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
-
+from encrypted_model_fields.fields import EncryptedCharField, EncryptedDateField
 # User Manager
 class UserManager(BaseUserManager):
     """Custom user manager for clients."""
@@ -143,3 +143,17 @@ class OTP(models.Model):
         expiration_time = timezone.now() - timezone.timedelta(hours=1)
         return self.created_at < expiration_time
 
+
+
+
+
+class DriverCheck(models.Model):
+    name = models.CharField(max_length=255)
+    uploaded_image = models.ImageField(upload_to="uploads/documents/")  # Encrypt uploaded images
+    face_image = models.ImageField(upload_to="uploads/faces/")          # Encrypt face images
+    extracted_text = EncryptedCharField(max_length=500)                   # Encrypt extracted text
+    expiry_date = EncryptedDateField()                                    # Encrypt expiry dates
+    is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name

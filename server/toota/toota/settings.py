@@ -110,3 +110,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+FIELD_ENCRYPTION_KEY = config("DJANGO_ENCRYPTED_FIELDS_KEY")

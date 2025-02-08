@@ -16,9 +16,16 @@ from .serializers import (
     ResendOTPSerializer,
     DriverSignupSerializer,
     DriverEmailVerificationSerializer,
-    DriverLoginSerializer
+    DriverLoginSerializer,
+    DriverCheckSerializer
 )
-
+from .models import DriverCheck
+from .util.verification import (extract_text, compare_faces, 
+                                extract_expiry_date,validate_expiry,
+                                get_dynamic_threshold,detect_watermark)
+from .util.audit_logs import log_verification_attempt
+from .util.notifications import send_notification
+from .util.rate_limiting import is_rate_limited
 class SignupView(APIView):
     """
     API View to handle user signup.
@@ -281,3 +288,64 @@ class DriverLoginView(APIView):
         logger.error(f"Login failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class DriverCheckView(APIView):
+    """
+    API View for driver KYC authentication with encrypted storage.
+    """
+    def post(self, request, *args, **kwargs):
+        # Rate Limiting Check
+        if is_rate_limited(request.user):
+            return Response({"message": "Rate limit exceeded. Try again later."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        serializer = DriverCheckSerializer(data=request.data)
+        if serializer.is_valid():
+            driver_check = serializer.save()
+
+            # Extract text and expiry date from the document
+            document_image_path = driver_check.uploaded_image.path
+            extracted_text = extract_text(document_image_path)
+            extracted_expiry_date = extract_expiry_date(document_image_path)
+
+            if not extracted_expiry_date:
+                return Response({"message": "Could not extract expiry date from the document."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate expiry date
+            if not validate_expiry(extracted_expiry_date):
+                log_verification_attempt(request.user, status=False, reason="Expired document.")
+                send_notification(request.user.email, "Verification Failed", "Your document has expired.")
+                return Response({"message": "Verification failed. Document expired."}, status=status.HTTP_400_BAD_REQUEST)
+            if not detect_watermark(document_image_path):
+                return Response({"message": "Verification failed. No watermark detected on the document."}, status=status.HTTP_400_BAD_REQUEST)
+            # Geo-Location Verification
+            # user_location = request.data.get("location")  # Assume location is sent in the request
+            # if not validate_geo_location(user_location):
+            #     log_verification_attempt(request.user, status=False, reason="Invalid location.")
+            #     return Response({"message": "Verification failed. Invalid location."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Perform text match
+            if driver_check.name.lower() in extracted_text.lower():
+                # Use the uploaded face image for face comparison
+                face_image_path = driver_check.face_image.path
+                face_match_score = compare_faces(document_image_path, face_image_path)
+                dynamic_threshold = get_dynamic_threshold(request.user)
+                
+                if face_match_score >= dynamic_threshold:
+                    driver_check.is_verified = True
+                    driver_check.extracted_text = extracted_text  # Encrypt extracted text
+                    driver_check.expiry_date = extracted_expiry_date  # Encrypt expiry date
+                    driver_check.save()
+
+                    log_verification_attempt(request.user, status=True)
+                    send_notification(request.user.email, "Verification Successful", "Your verification was successful.")
+                    return Response({"message": "Verification successful. Name, face, and expiry date match."}, status=status.HTTP_200_OK)
+                else:
+                    log_verification_attempt(request.user, status=False, reason="Face does not match.")
+                    send_notification(request.user.email, "Verification Failed", "Your face does not match the document.")
+                    return Response({"message": "Verification failed. Face does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                log_verification_attempt(request.user, status=False, reason="Name does not match.")
+                return Response({"message": "Verification failed. Name does not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

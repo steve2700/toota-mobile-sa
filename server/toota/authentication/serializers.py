@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.timezone import timedelta
 from .models import User,Driver, OTP
 from .utils import generate_otp, send_otp_email
 
@@ -300,3 +302,11 @@ class DriverResendOTPSerializer(serializers.Serializer):
         otp.save()
         send_otp_email(driver.email, otp.code)
         return driver
+
+
+from .models import DriverCheck
+
+class DriverCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverCheck
+        fields = ['user', 'name', 'uploaded_image', 'geo_location', 'expiry_date']

@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import SignupView, VerifyEmailView, LoginView, KYCUpdateView,  ResendOTPView,  DriverSignupView, DriverEmailVerificationView, DriverLoginView
+from .views import (SignupView, VerifyEmailView, LoginView, KYCUpdateView, 
+                    ResendOTPView,  DriverSignupView, DriverEmailVerificationView, 
+                    DriverLoginView, DriverCheckView)
 
 urlpatterns = [
     path('signup/user/', SignupView.as_view(), name='signup'),
@@ -10,5 +12,8 @@ urlpatterns = [
     path('signup/driver/', DriverSignupView.as_view(), name='driver_signup'),
     path('verify-email/driver/', DriverEmailVerificationView.as_view(), name='driver_verify_email'),
     path('login/driver/', DriverLoginView.as_view(), name='driver_login'),
+    path('verify/', DriverCheckView.as_view(), name='driver_check'),
+
+
 ]
 
