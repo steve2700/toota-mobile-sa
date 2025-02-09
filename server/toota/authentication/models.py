@@ -68,6 +68,22 @@ class ClientUser(AbstractCustomUser):
     """
     physical_address = models.TextField(blank=True, null=True)
 
+    # Override the permission fields to avoid reverse accessor clashes
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='client_users',
+        blank=True,
+        help_text=_('The groups this user belongs to.'),
+        verbose_name=_('groups')
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='client_user_permissions',
+        blank=True,
+        help_text=_('Specific permissions for this user.'),
+        verbose_name=_('user permissions')
+    )
+
     objects = BaseCustomUserManager()
 
     def __str__(self):
@@ -100,6 +116,22 @@ class Driver(AbstractCustomUser):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    # Override the permission fields with unique related names
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='driver_users',
+        blank=True,
+        help_text=_('The groups this driver belongs to.'),
+        verbose_name=_('groups')
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='driver_user_permissions',
+        blank=True,
+        help_text=_('Specific permissions for this driver.'),
+        verbose_name=_('user permissions')
+    )
 
     objects = BaseCustomUserManager()
 

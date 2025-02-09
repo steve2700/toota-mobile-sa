@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import ClientUser as User, Driver
+from rest_framework.validators import UniqueValidator
+from django.contrib.auth.password_validation import validate_password
 
 
 ###############################################################################
@@ -12,16 +14,21 @@ class BaseSignupSerializer(serializers.ModelSerializer):
     Base serializer for signup operations.
     Expects inheriting serializers to specify the model and fields.
     """
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
+    )
     password = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'password'},
+        validators=[validate_password]
     )
-    
+
     class Meta:
-        model = None
-        fields = ('email', 'password', 'first_name', 'last_name')
-    
+        model = User
+        fields = ('email', 'password')
+
     def create(self, validated_data):
         # Delegate creation to the model's custom manager's create_user method
         return self.Meta.model.objects.create_user(**validated_data)
