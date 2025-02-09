@@ -6,6 +6,7 @@ from .views import (
     UserForgotPasswordView,
     UserResetPasswordView,
     ProfileView,
+    KYCUpdateView,
     
     # Driver endpoints
     DriverSignupView,
@@ -27,7 +28,8 @@ urlpatterns = [
     path('forgot-password/user/', UserForgotPasswordView.as_view(), name='forgot_password_user'),
     path('reset-password/user/', UserResetPasswordView.as_view(), name='reset_password_user'),
     path('profile/user/', ProfileView.as_view(), name='profile_user'),
-    
+    path('kyc-update/user/', KYCUpdateView.as_view(), name='kyc_update'),
+
     # Driver endpoints
     path('signup/driver/', DriverSignupView.as_view(), name='signup_driver'),
     path('login/driver/', DriverLoginView.as_view(), name='login_driver'),

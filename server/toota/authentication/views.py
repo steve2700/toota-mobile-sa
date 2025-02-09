@@ -7,7 +7,7 @@ from django.conf import settings
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status,generics,permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -23,6 +23,7 @@ from .serializers import (
     UserProfileSerializer,
     DriverSignupSerializer,
     DriverLoginSerializer,
+    KYCUpdateSerializer
 )
 from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email 
 logger = logging.getLogger(__name__)
@@ -460,4 +461,31 @@ class ResendVerificationCodeView(APIView):
         send_verification_otp_email(user_obj.email, new_otp)
         return Response({"message": "Verification code resent successfully."},
                         status=status.HTTP_200_OK)
+
+class KYCUpdateView(generics.UpdateAPIView):
+    """
+    Endpoint for updating KYC details for the authenticated client user.
+    Allows updating first name, last name, physical address, phone number, and profile picture.
+    """
+    queryset = User.objects.all()
+    serializer_class = KYCUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    @swagger_auto_schema(
+        operation_description="Update KYC details for the authenticated user. Fields include first name, last name, physical address, phone number, and profile picture.",
+        request_body=KYCUpdateSerializer,
+        responses={
+            200: openapi.Response("KYC update successful."),
+            400: "Invalid input data."
+        }
+    )
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

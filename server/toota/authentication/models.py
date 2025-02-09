@@ -1,8 +1,11 @@
+
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
+from cloudinary.models import CloudinaryField
+from phonenumber_field.modelfields import PhoneNumberField  # Requires django-phonenumber-field
 
 ###############################################################################
 # Base Manager: Shared logic for creating users
@@ -28,12 +31,10 @@ class BaseCustomUserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-
         if extra_fields.get('is_staff') is not True:
             raise ValueError(_("Superuser must have is_staff=True."))
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
-
         return self._create_user(email, password, **extra_fields)
 
 ###############################################################################
@@ -47,10 +48,10 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    # Using CloudinaryField so uploaded images are stored in Cloudinary.
+    profile_pic = CloudinaryField('image', blank=True, null=True)
     phone_number = PhoneNumberField(blank=True, null=True)
     physical_address = models.TextField(blank=True, null=True)
-
     is_active = models.BooleanField(default=False)  # Requires verification
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
@@ -69,9 +70,8 @@ class ClientUser(AbstractCustomUser):
     """
     Client user model that extends the abstract custom user with client-specific fields.
     """
-    physical_address = models.TextField(blank=True, null=True)
-
-    # Override the permission fields to avoid reverse accessor clashes
+    # (physical_address, phone_number and profile_pic are defined in the abstract model.)
+    # Override the permission fields to avoid reverse accessor clashes.
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='client_users',
@@ -93,7 +93,7 @@ class ClientUser(AbstractCustomUser):
         return self.email
 
 ###############################################################################
-# Driver Model
+# Driver Model (unchanged for now)
 ###############################################################################
 class Driver(AbstractCustomUser):
     """
@@ -120,7 +120,6 @@ class Driver(AbstractCustomUser):
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
-    # Override the permission fields with unique related names
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='driver_users',
