@@ -48,6 +48,9 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    phone_number = PhoneNumberField(blank=True, null=True)
+    physical_address = models.TextField(blank=True, null=True)
+
     is_active = models.BooleanField(default=False)  # Requires verification
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
