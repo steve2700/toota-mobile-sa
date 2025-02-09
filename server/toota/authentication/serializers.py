@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from phonenumber_field.serializerfields import PhoneNumberField
-from .models import ClientUser, Driver
+from .models import User, Driver
 
 ###############################################################################
 # Base Serializers
@@ -16,7 +16,7 @@ class BaseSignupSerializer(serializers.ModelSerializer):
     """
     email = serializers.EmailField(
         required=True,
-        validators=[UniqueValidator(queryset=ClientUser.objects.all(), message="This email is already in use.")]
+        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
     )
     password = serializers.CharField(
         write_only=True,
@@ -26,7 +26,7 @@ class BaseSignupSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = ClientUser
+        model = User
         fields = ('email', 'password')
 
     def create(self, validated_data):
@@ -63,19 +63,19 @@ class UserSignupSerializer(BaseSignupSerializer):
     Only includes email and password; additional fields are handled during KYC.
     """
     class Meta(BaseSignupSerializer.Meta):
-        model = ClientUser
+        model = User
         fields = BaseSignupSerializer.Meta.fields
 
 
 class UserLoginSerializer(BaseLoginSerializer):
     """
-    Serializer for client user login.
+    Serializer for  user login.
     Validates that the authenticated user is a ClientUser instance.
     """
     def validate(self, data):
         data = super().validate(data)
         user = data.get('user')
-        if not isinstance(user, ClientUser):
+        if not isinstance(user, User):
             raise serializers.ValidationError("Invalid credentials for a user.")
         return data
 
@@ -86,7 +86,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     The email field is read-only.
     """
     class Meta:
-        model = ClientUser
+        model = User
         fields = ('email', 'first_name', 'last_name', 'physical_address', 'phone_number', 'profile_pic')
         read_only_fields = ('email',)
 
@@ -95,14 +95,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 ###############################################################################
 class KYCUpdateSerializer(serializers.ModelSerializer):
     """
-    Serializer for updating KYC details for a client user.
+    Serializer for updating KYC details for a  user.
     Validates first name, last name, physical address, phone number, and profile picture.
     """
     phone_number = PhoneNumberField(required=True)
     profile_pic = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
-        model = ClientUser
+        model = User
         fields = ['first_name', 'last_name', 'physical_address', 'phone_number', 'profile_pic']
 
     def validate_first_name(self, value):

@@ -66,22 +66,22 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
 ###############################################################################
 # Client User Model
 ###############################################################################
-class ClientUser(AbstractCustomUser):
+class User(AbstractCustomUser):
     """
-    Client user model that extends the abstract custom user with client-specific fields.
+     user model that extends the abstract custom user with client-specific fields.
     """
     # (physical_address, phone_number and profile_pic are defined in the abstract model.)
     # Override the permission fields to avoid reverse accessor clashes.
     groups = models.ManyToManyField(
         'auth.Group',
-        related_name='client_users',
+        related_name='users',
         blank=True,
         help_text=_('The groups this user belongs to.'),
         verbose_name=_('groups')
     )
     user_permissions = models.ManyToManyField(
         'auth.Permission',
-        related_name='client_user_permissions',
+        related_name='user_permissions',
         blank=True,
         help_text=_('Specific permissions for this user.'),
         verbose_name=_('user permissions')
@@ -147,7 +147,7 @@ class OTP(models.Model):
     """
     Model to handle email verification via a 4-digit OTP code.
     """
-    user = models.OneToOneField(ClientUser, on_delete=models.CASCADE, related_name='otp')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp')
     code = models.CharField(max_length=4)  # 4-digit OTP code
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
@@ -157,8 +157,8 @@ class OTP(models.Model):
 
     def is_expired(self):
         """
-        Checks if the OTP has expired (e.g., after 1 hour).
+        Checks if the OTP has expired (e.g., 5 minutes).
         """
-        expiration_time = timezone.now() - timezone.timedelta(hours=1)
+        expiration_time = timezone.now() - timezone.timedelta(minutes=5)
         return self.created_at < expiration_time
 
