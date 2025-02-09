@@ -61,11 +61,11 @@ class BaseLoginSerializer(serializers.Serializer):
 class UserSignupSerializer(BaseSignupSerializer):
     """
     Serializer for client user signup.
-    Includes additional fields such as physical_address and profile_pic.
+    Only includes email and password; additional fields are handled during KYC.
     """
     class Meta(BaseSignupSerializer.Meta):
         model = User
-        fields = BaseSignupSerializer.Meta.fields + ('physical_address', 'profile_pic',)
+        fields = BaseSignupSerializer.Meta.fields  # Only email and password
 
 
 class UserLoginSerializer(BaseLoginSerializer):
