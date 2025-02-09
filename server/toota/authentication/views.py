@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import User, Driver
+from .models import ClientUser as User, Driver
 from .serializers import (
     UserSignupSerializer,
     EmailVerificationSerializer,
@@ -24,8 +24,7 @@ from .serializers import (
     DriverSignupSerializer,
     DriverLoginSerializer,
 )
-from .utils import generate_otp, send_password_reset_otp, send_verification_otp_email
-
+from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -424,4 +423,41 @@ class ResendVerificationCodeView(APIView):
     """
     Common endpoint to resend the verification OTP code for email verification
     for both client users and drivers. Expects 'email' in the request.
+    """
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email")
+            },
+            required=['email']
+        ),
+        responses={
+            200: "Verification code resent successfully.",
+            404: "User not found."
+        }
+    )
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        user_obj = None
+        try:
+            user_obj = User.objects.get(email=email)
+        except User.DoesNotExist:
+            try:
+                user_obj = Driver.objects.get(email=email)
+            except Driver.DoesNotExist:
+                return Response({"error": "User not found."},
+                                status=status.HTTP_404_NOT_FOUND)
+        
+        new_otp = generate_otp()
+        user_obj.otp = new_otp
+        user_obj.otp_created_at = now()
+        user_obj.save()
+        send_verification_otp_email(user_obj.email, new_otp)
+        return Response({"message": "Verification code resent successfully."},
+                        status=status.HTTP_200_OK)
 

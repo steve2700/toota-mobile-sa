@@ -14,7 +14,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1'  # Local domain (for testing)
 ]  
 
-AUTH_USER_MODEL = 'authentication.User'
+AUTH_USER_MODEL = 'authentication.ClientUser'
 
 INSTALLED_APPS = [
     "django.contrib.admin",
