@@ -43,9 +43,21 @@ class BaseSignupView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": self.success_message},
-                            status=status.HTTP_201_CREATED)
+            user = serializer.save()
+            # Generate OTP
+            otp = generate_otp()
+            # Assuming your User model has 'otp' and 'otp_created_at' fields
+            user.otp = otp
+            user.otp_created_at = now()
+            user.save()
+            # Send OTP via email
+            email_sent = send_verification_otp_email(user.email, otp)
+            if email_sent:
+                return Response({"message": self.success_message},
+                                status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error": "Failed to send OTP email. Please try again."},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
