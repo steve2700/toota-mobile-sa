@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import  User, Driver
+from .models import  User, Driver, OTP
 from .serializers import (
     UserSignupSerializer,
     EmailVerificationSerializer,
@@ -33,10 +33,6 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 
 class BaseSignupView(APIView):
-    """
-    Base view for handling signup.
-    Expects a serializer_class attribute and returns a success message upon creation.
-    """
     serializer_class = None
     success_message = "Signup successful. Check your email for OTP."
 
@@ -45,20 +41,20 @@ class BaseSignupView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             # Generate OTP
-            otp = generate_otp()
-            # Assuming your User model has 'otp' and 'otp_created_at' fields
-            user.otp = otp
-            user.otp_created_at = now()
+            otp_code = generate_otp()
+            # Create OTP instance
+            otp_instance = OTP.objects.create(user=user, code=otp_code, created_at=now())
+            # Assign OTP instance to user's otp field
+            user.otp = otp_instance
             user.save()
             # Send OTP via email
-            email_sent = send_verification_otp_email(user.email, otp)
+            email_sent = send_verification_otp_email(user.email, otp_code)
             if email_sent:
-                return Response({"message": self.success_message},
-                                status=status.HTTP_201_CREATED)
+                return Response({"message": self.success_message}, status=status.HTTP_201_CREATED)
             else:
-                return Response({"error": "Failed to send OTP email. Please try again."},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"error": "Failed to send OTP email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class BaseLoginView(APIView):
