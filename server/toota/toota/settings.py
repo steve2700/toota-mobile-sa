@@ -14,7 +14,9 @@ ALLOWED_HOSTS = [
     '127.0.0.1'  # Local domain (for testing)
 ]
 
+
 AUTH_USER_MODEL = 'authentication.User'
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -29,7 +31,8 @@ INSTALLED_APPS = [
     'corsheaders',  # For CORS
     'cloudinary',  # Cloudinary support
     'cloudinary_storage',  # Cloudinary storage backend
-    'phonenumber_field',  # Phone number field validation
+    'phonenumber_field',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

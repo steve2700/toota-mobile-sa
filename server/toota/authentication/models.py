@@ -1,4 +1,3 @@
-
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -64,13 +63,12 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
         abstract = True
 
 ###############################################################################
-# Client User Model
+# User Model
 ###############################################################################
 class User(AbstractCustomUser):
     """
-     user model that extends the abstract custom user with client-specific fields.
+    User model that extends the abstract custom user with client-specific fields.
     """
-    # (physical_address, phone_number and profile_pic are defined in the abstract model.)
     # Override the permission fields to avoid reverse accessor clashes.
     groups = models.ManyToManyField(
         'auth.Group',
@@ -157,7 +155,7 @@ class OTP(models.Model):
 
     def is_expired(self):
         """
-        Checks if the OTP has expired (e.g., 5 minutes).
+        Checks if the OTP has expired (e.g., after 5 minutes).
         """
         expiration_time = timezone.now() - timezone.timedelta(minutes=5)
         return self.created_at < expiration_time
