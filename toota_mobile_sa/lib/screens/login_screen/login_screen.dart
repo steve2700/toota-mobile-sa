@@ -1,12 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
-class LoginScreen extends ConsumerWidget {
+final dioProvider = Provider((ref) => Dio());
+
+/// Login API Provider
+final loginProvider = FutureProvider.family<bool, Map<String, String>>((ref, credentials) async {
+  final dio = ref.read(dioProvider);
+  try {
+    final response = await dio.post(
+      'https://toota-mobile-sa.onrender.com/swagger/login/user',
+      data: {'phone': credentials['phone'], 'password': credentials['password']},
+    );
+
+    if (response.statusCode == 200) {
+      return true; // Login successful
+    } else {
+      throw Exception('Invalid phone number or password');
+    }
+  } catch (e) {
+    throw Exception('Login failed: $e');
+  }
+});
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  void _handleLogin() async {
+    String phone = _phoneController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (phone.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone and password are required')),
+      );
+      return;
+    }
+
+    final login = ref.read(loginProvider({'phone': phone, 'password': password}).future);
+    try {
+      bool isSuccess = await login;
+      if (isSuccess) {
+        Navigator.pushNamed(context, '/home'); // Navigate to home on success
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid credentials, please try again')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
+    final loginState = ref.watch(loginProvider({'phone': '', 'password': ''}));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -20,11 +79,7 @@ class LoginScreen extends ConsumerWidget {
             const Center(
               child: Text(
                 'Welcome back',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
             const SizedBox(height: 8),
@@ -37,24 +92,22 @@ class LoginScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             TextField(
+              controller: _phoneController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
                 labelText: 'Phone number',
                 prefixIcon: const Icon(Icons.phone, color: Colors.orange),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Password',
                 prefixIcon: const Icon(Icons.lock, color: Colors.orange),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 8),
@@ -109,7 +162,7 @@ class LoginScreen extends ConsumerWidget {
             SizedBox(
               width: width,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade200,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -117,9 +170,16 @@ class LoginScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: loginState.when(
+                  data: (_) => const Text(
+                    'Login',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  loading: () => const CircularProgressIndicator(color: Colors.white),
+                  error: (e, _) => const Text(
+                    'Login',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ),
             ),
@@ -129,7 +189,7 @@ class LoginScreen extends ConsumerWidget {
                 onPressed: () {},
                 child: const Text('I don’t have an account', style: TextStyle(color: Colors.orange)),
               ),
-            )
+            ),
           ],
         ),
       ),
