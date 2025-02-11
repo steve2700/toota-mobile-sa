@@ -402,11 +402,12 @@ class CommonVerifyEmailView(APIView):
     )
     def post(self, request):
         email = request.data.get("email")
-        otp = request.data.get("otp")
-        if not email or not otp:
+        otp_input = request.data.get("otp")
+        if not email or not otp_input:
             return Response({"error": "Email and OTP are required."},
                             status=status.HTTP_400_BAD_REQUEST)
-        user_obj = None
+        
+        # Try to find the user in the User model; if not found, try Driver.
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -416,16 +417,28 @@ class CommonVerifyEmailView(APIView):
                 return Response({"error": "User not found."},
                                 status=status.HTTP_404_NOT_FOUND)
         
-        otp_validity_duration = timedelta(minutes=5)
-        if user_obj.otp != otp or (now() - user_obj.otp_created_at) > otp_validity_duration:
+        # Ensure an OTP instance exists for this user.
+        try:
+            otp_instance = user_obj.otp
+        except Exception:
+            return Response({"error": "No OTP found for this user."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set OTP validity duration to 60 minutes (1 hour)
+        otp_validity_duration = timedelta(minutes=60)
+        
+        # Compare the provided OTP with the stored OTP code and check expiration.
+        if otp_instance.code != otp_input or (now() - otp_instance.created_at) > otp_validity_duration:
             return Response({"error": "Invalid or expired OTP."},
                             status=status.HTTP_400_BAD_REQUEST)
         
+        # OTP is valid; activate the user and remove the OTP record.
         user_obj.is_active = True
-        user_obj.otp = None
+        otp_instance.delete()
         user_obj.save()
         return Response({"message": "Email verified successfully."},
                         status=status.HTTP_200_OK)
+
 
 
 class ResendVerificationCodeView(APIView):
