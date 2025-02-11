@@ -47,7 +47,6 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
-    # Using CloudinaryField so uploaded images are stored in Cloudinary.
     profile_pic = CloudinaryField('image', blank=True, null=True)
     phone_number = PhoneNumberField(blank=True, null=True)
     physical_address = models.TextField(blank=True, null=True)
@@ -69,7 +68,6 @@ class User(AbstractCustomUser):
     """
     User model that extends the abstract custom user with client-specific fields.
     """
-    # Override the permission fields to avoid reverse accessor clashes.
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='users',
@@ -91,14 +89,15 @@ class User(AbstractCustomUser):
         return self.email
 
 ###############################################################################
-# Driver Model (unchanged for now)
+# Driver Model (updated for optional KYC fields)
 ###############################################################################
 class Driver(AbstractCustomUser):
     """
     Driver model that extends the abstract custom user with driver-specific fields.
+    For driver signup, only email and password are required. Other fields are optional.
     """
-    license_number = models.CharField(max_length=50, unique=True)
-    license_expiry = models.DateField()
+    license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    license_expiry = models.DateField(null=True, blank=True)
     VEHICLE_CHOICES = [
         ('1 ton Truck', '1 ton Truck'),
         ('1.5 ton Truck', '1.5 ton Truck'),
@@ -107,11 +106,10 @@ class Driver(AbstractCustomUser):
         ('Bakkie', 'Bakkie'),
         ('8 ton Truck', '8 ton Truck'),
     ]
-    vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES)
-    vehicle_registration = models.CharField(max_length=50, unique=True)
+    vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
+    vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
-    number_plate = models.CharField(max_length=50, unique=True)
-    # Override profile_pic upload location for drivers
+    number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
     profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
@@ -136,23 +134,31 @@ class Driver(AbstractCustomUser):
     objects = BaseCustomUserManager()
 
     def __str__(self):
-        return f"{self.email} - {self.vehicle_type}"
+        return f"{self.email} - {self.vehicle_type or 'No Vehicle Data'}"
 
 ###############################################################################
-# OTP Model: For handling email verification
+# OTP Model: For handling email verification (shared by Users and Drivers)
 ###############################################################################
 class OTP(models.Model):
     """
     Model to handle email verification via a 4-digit OTP code.
     The OTP is valid for 60 minutes.
+    This model supports both client users and drivers by allowing only one of the
+    relationships to be set.
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp', null=True, blank=True)
+    driver = models.OneToOneField(Driver, on_delete=models.CASCADE, related_name='otp', null=True, blank=True)
     code = models.CharField(max_length=4)  # 4-digit OTP code
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"OTP for {self.user.email}"
+        if self.user:
+            return f"OTP for {self.user.email}"
+        elif self.driver:
+            return f"OTP for {self.driver.email}"
+        else:
+            return "Unassigned OTP"
 
     def is_expired(self):
         """
@@ -160,3 +166,4 @@ class OTP(models.Model):
         """
         expiration_time = timezone.now() - timezone.timedelta(minutes=60)
         return self.created_at < expiration_time
+
