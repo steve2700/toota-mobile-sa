@@ -45,6 +45,7 @@ dependencies:
   smooth_page_indicator: ^1.2.0+3
 
   flutter_riverpod: ^2.6.1
+  dio: ^5.4.0
   lucide_icons: ^0.257.0
 
 dev_dependencies:

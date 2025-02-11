@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final locationProvider = StateProvider<String>((ref) => 'Sandton');
 final vehicleArrivalProvider = StateProvider<int>((ref) => 30);
 
-class HomeScreen extends ConsumerWidget {
+class DashboardThreeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = ref.watch(locationProvider);
