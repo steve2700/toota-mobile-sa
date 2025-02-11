@@ -452,7 +452,7 @@ class ResendVerificationCodeView(APIView):
             return Response({"error": "Email is required."},
                             status=status.HTTP_400_BAD_REQUEST)
         
-        user_obj = None
+        # Try to find the user in either the User or Driver models.
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -462,13 +462,24 @@ class ResendVerificationCodeView(APIView):
                 return Response({"error": "User not found."},
                                 status=status.HTTP_404_NOT_FOUND)
         
-        new_otp = generate_otp()
-        user_obj.otp = new_otp
-        user_obj.otp_created_at = now()
-        user_obj.save()
-        send_verification_otp_email(user_obj.email, new_otp)
-        return Response({"message": "Verification code resent successfully."},
-                        status=status.HTTP_200_OK)
+        # Generate a new OTP code.
+        new_otp_code = generate_otp()
+        # Get or create the OTP instance for the user.
+        otp_instance, created = OTP.objects.get_or_create(user=user_obj)
+        otp_instance.code = new_otp_code
+        # Update the creation timestamp (since auto_now_add doesn't update on save).
+        otp_instance.created_at = now()
+        otp_instance.is_verified = False
+        otp_instance.save()
+        
+        # Send the OTP email with a validity of 60 minutes.
+        email_sent = send_verification_otp_email(user_obj.email, new_otp_code, validity_minutes=60)
+        if email_sent:
+            return Response({"message": "Verification code resent successfully."},
+                            status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Failed to send verification email."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class KYCUpdateView(generics.UpdateAPIView):
     """

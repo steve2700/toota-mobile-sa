@@ -144,6 +144,7 @@ class Driver(AbstractCustomUser):
 class OTP(models.Model):
     """
     Model to handle email verification via a 4-digit OTP code.
+    The OTP is valid for 60 minutes.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp')
     code = models.CharField(max_length=4)  # 4-digit OTP code
@@ -155,8 +156,7 @@ class OTP(models.Model):
 
     def is_expired(self):
         """
-        Checks if the OTP has expired (e.g., after 5 minutes).
+        Checks if the OTP has expired (after 60 minutes).
         """
-        expiration_time = timezone.now() - timezone.timedelta(minutes=5)
+        expiration_time = timezone.now() - timezone.timedelta(minutes=60)
         return self.created_at < expiration_time
-

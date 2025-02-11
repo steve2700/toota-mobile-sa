@@ -6,8 +6,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.timezone import now
 
-# Default OTP validity in minutes; can be overridden via Django settings.
-DEFAULT_OTP_VALIDITY_MINUTES = getattr(settings, 'OTP_VALIDITY_MINUTES', 5)
+# Default OTP validity in minutes; we set it to 60 (1 hour)
+DEFAULT_OTP_VALIDITY_MINUTES = getattr(settings, 'OTP_VALIDITY_MINUTES', 60)
 
 def generate_otp(length=4):
     """
@@ -34,7 +34,7 @@ def _send_email(subject, message, recipient_list, from_email=None):
         send_mail(subject, message, from_email, recipient_list)
         return True
     except Exception as e:
-        # Log the error appropriately in production (e.g., using Django's logging framework)
+        # In production, use proper logging rather than print
         print(f"Error sending email: {e}")
         return False
 
@@ -45,6 +45,7 @@ def send_verification_otp_email(user_email, otp_code, validity_minutes=DEFAULT_O
     :param user_email: The recipient's email address.
     :param otp_code: The OTP code to be sent.
     :param validity_minutes: Validity duration (in minutes) for the OTP.
+                               Defaults to 60 minutes.
     :return: Boolean indicating if the email was sent successfully.
     """
     subject = "Your Email Verification OTP"
@@ -64,6 +65,7 @@ def send_password_reset_otp_email(user_email, otp_code, validity_minutes=DEFAULT
     :param user_email: The recipient's email address.
     :param otp_code: The OTP code to be sent.
     :param validity_minutes: Validity duration (in minutes) for the OTP.
+                               Defaults to 60 minutes.
     :return: Boolean indicating if the email was sent successfully.
     """
     subject = "Your Password Reset OTP"
