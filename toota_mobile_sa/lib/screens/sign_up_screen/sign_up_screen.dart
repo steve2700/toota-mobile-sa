@@ -10,17 +10,23 @@ class SignUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
 
   void _signUp() async {
-    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (phone.isEmpty || password.isEmpty) {
+    if (email.isEmpty || email.length > 255) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
+        const SnackBar(content: Text("Email must be 1 and 255")),
+      );
+      return;
+    }
+   if (password.length < 8 || password.length > 128) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password must be between 8 and 128 characters")),
       );
       return;
     }
@@ -28,18 +34,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     setState(() => isLoading = true);
 
     final response =
-        await ref.read(signUpProvider({"phone": phone, "password": password}).future);
+        await ref.read(signUpProvider({"phone": email, "password": password}).future);
 
     setState(() => isLoading = false);
 
     if (response["success"] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Signup successful!")),
-      );
+      Navigator.pushNamed(context, '/otp');
       // Navigate to next screen if needed
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${response["error"]}")),
+        SnackBar(content: Text("Sign up failed. Please try again")),
       );
     }
   }
@@ -78,10 +82,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             ),
             const SizedBox(height: 32),
             TextField(
-              controller: _phoneController,
+              controller: _emailController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                labelText: 'Phone number',
+                labelText: 'Email',
                 prefixIcon: const Icon(Icons.phone),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),

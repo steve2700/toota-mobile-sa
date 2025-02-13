@@ -49,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       bool isSuccess = await login;
       if (isSuccess) {
-        Navigator.pushNamed(context, '/home'); // Navigate to home on success
+        Navigator.pushNamed(context, '/dashboard'); // Navigate to dashboard on success
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid credentials, please try again')),

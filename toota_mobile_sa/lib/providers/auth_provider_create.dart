@@ -7,6 +7,6 @@ final signUpProvider =
     FutureProvider.family<Map<String, dynamic>, Map<String, String>>(
   (ref, credentials) async {
     final authService = ref.read(authServiceProvider);
-    return authService.signUp(credentials['phone']!, credentials['password']!);
+    return authService.signUp(credentials['email']!, credentials['password']!);
   },
 );
