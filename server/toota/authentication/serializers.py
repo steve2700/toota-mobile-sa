@@ -6,18 +6,17 @@ from django.contrib.auth.password_validation import validate_password
 from phonenumber_field.serializerfields import PhoneNumberField
 from .models import User, Driver
 
+
 ###############################################################################
 # Base Serializers
 ###############################################################################
+
 class BaseSignupSerializer(serializers.ModelSerializer):
     """
     Base serializer for signup operations.
     Expects inheriting serializers to specify the model and fields.
     """
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]
-    )
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -26,13 +25,20 @@ class BaseSignupSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = User
+        model = None  # To be specified in child serializers
         fields = ('email', 'password')
 
-    def create(self, validated_data):
-        # Delegate creation to the model's custom manager's create_user method
-        return self.Meta.model.objects.create_user(**validated_data)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Dynamically set the UniqueValidator based on the model in Meta.
+        if self.Meta.model:
+            self.fields['email'].validators = [
+                UniqueValidator(queryset=self.Meta.model.objects.all(), message="This email is already in use.")
+            ]
 
+    def create(self, validated_data):
+        # Delegate creation to the model's custom manager's create_user method.
+        return self.Meta.model.objects.create_user(**validated_data)
 
 class BaseLoginSerializer(serializers.Serializer):
     """

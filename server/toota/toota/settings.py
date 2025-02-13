@@ -16,7 +16,7 @@ ALLOWED_HOSTS = [
 
 
 AUTH_USER_MODEL = 'authentication.User'
-
+AUTH_DRIVER_MODEL = 'authentication.Driver'
 
 INSTALLED_APPS = [
     "django.contrib.admin",

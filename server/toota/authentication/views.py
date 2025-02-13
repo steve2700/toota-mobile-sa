@@ -39,21 +39,28 @@ class BaseSignupView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            # Generate OTP
-            otp_code = generate_otp()
-            # Create OTP instance
-            otp_instance = OTP.objects.create(user=user, code=otp_code, created_at=now())
-            # Assign OTP instance to user's otp field
-            user.otp = otp_instance
-            user.save()
-            # Send OTP via email
-            email_sent = send_verification_otp_email(user.email, otp_code)
-            if email_sent:
-                return Response({"message": self.success_message}, status=status.HTTP_201_CREATED)
-            else:
-                return Response({"error": "Failed to send OTP email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                user = serializer.save()
+                # Generate OTP
+                otp_code = generate_otp()
+                # Create OTP instance
+                if isinstance(user, User):
+                    OTP.objects.create(user=user, code=otp_code)
+                elif isinstance(user, Driver):
+                    OTP.objects.create(driver=user, code=otp_code)
+                else:
+                    return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+                # Send OTP via email
+                email_sent = send_verification_otp_email(user.email, otp_code)
+                if email_sent:
+                    return Response({"message": self.success_message}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": "Failed to send OTP email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except IntegrityError:
+                return Response({"error": "An account with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 
