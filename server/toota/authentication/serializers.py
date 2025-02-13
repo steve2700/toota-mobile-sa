@@ -163,10 +163,15 @@ class DriverLoginSerializer(BaseLoginSerializer):
     Validates that the authenticated user is a Driver instance.
     """
     def validate(self, data):
-        data = super().validate(data)
-        user = data.get('user')
-        if not isinstance(user, Driver):
+        email = data.get('email')
+        password = data.get('password')
+        try:
+            driver = Driver.objects.get(email=email)
+        except Driver.DoesNotExist:
             raise serializers.ValidationError("Invalid credentials for a driver.")
+        if not driver.check_password(password):
+            raise serializers.ValidationError("Invalid credentials for a driver.")
+        data['user'] = driver
         return data
 
 

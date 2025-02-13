@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status,generics,permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -86,7 +87,7 @@ class BaseLoginView(APIView):
 class BaseForgotPasswordView(APIView):
     """
     Base view for handling forgot password.
-    Expects a model_class attribute (User or Driver) that has 'otp' and 'otp_created_at'.
+    Expects a model_class attribute (User or Driver) that has an OTP relation.
     """
     model_class = None
 
@@ -95,39 +96,54 @@ class BaseForgotPasswordView(APIView):
         try:
             obj = self.model_class.objects.get(email=email)
             reset_otp = generate_otp()
-            obj.otp = reset_otp
-            obj.otp_created_at = now()
-            obj.save()
-            send_password_reset_otp(obj.email, reset_otp)
+            # For User or Driver, update the OTP instance accordingly.
+            if isinstance(obj, User):
+                otp_instance, created = OTP.objects.get_or_create(user=obj)
+            elif isinstance(obj, Driver):
+                otp_instance, created = OTP.objects.get_or_create(driver=obj)
+            else:
+                return Response({"error": "Invalid object type."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            otp_instance.code = reset_otp
+            # Update created_at manually since auto_now_add doesn't update on save.
+            otp_instance.created_at = now()
+            otp_instance.is_verified = False
+            otp_instance.save()
+            send_password_reset_otp_email(obj.email, reset_otp, validity_minutes=60)
             return Response({"message": "OTP sent to email for password reset."},
                             status=status.HTTP_200_OK)
         except self.model_class.DoesNotExist:
             return Response({"error": "User not found."},
                             status=status.HTTP_404_NOT_FOUND)
 
-
 class BaseResetPasswordView(APIView):
     """
     Base view for handling password reset using OTP.
-    Expects a model_class attribute (User or Driver) with 'otp' and 'otp_created_at'.
+    Expects a model_class attribute (User or Driver) with an OTP relation.
     """
     model_class = None
 
     def post(self, request):
         email = request.data.get("email")
-        otp = request.data.get("otp")
+        provided_otp = request.data.get("otp")
         new_password = request.data.get("new_password")
         try:
             obj = self.model_class.objects.get(email=email)
-            otp_validity_duration = timedelta(minutes=5)
-            if obj.otp == otp and now() - obj.otp_created_at <= otp_validity_duration:
-                obj.set_password(new_password)
-                obj.otp = None  # Clear OTP after successful reset
-                obj.save()
-                return Response({"message": "Password reset successful."},
-                                status=status.HTTP_200_OK)
-            return Response({"error": "Invalid or expired OTP."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            try:
+                otp_instance = obj.otp
+            except Exception:
+                return Response({"error": "OTP not found for this user."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            # Set OTP validity to 60 minutes.
+            otp_validity_duration = timedelta(minutes=60)
+            if otp_instance.code != provided_otp or (now() - otp_instance.created_at) > otp_validity_duration:
+                return Response({"error": "Invalid or expired OTP."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj.set_password(new_password)
+            otp_instance.delete()  # Clear OTP after successful reset
+            obj.save()
+            return Response({"message": "Password reset successful."},
+                            status=status.HTTP_200_OK)
         except self.model_class.DoesNotExist:
             return Response({"error": "User not found."},
                             status=status.HTTP_404_NOT_FOUND)
@@ -218,6 +234,7 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        security=[{'Bearer': []}],
         responses={200: UserProfileSerializer()}
     )
     def get(self, request):
@@ -225,6 +242,7 @@ class ProfileView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        security=[{'Bearer': []}],
         request_body=UserProfileSerializer,
         responses={
             200: "Profile updated successfully.",
@@ -238,6 +256,7 @@ class ProfileView(APIView):
             return Response({"message": "Profile updated successfully."},
                             status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 ###############################################################################
 # Driver Endpoints
@@ -501,6 +520,45 @@ class ResendVerificationCodeView(APIView):
             return Response({"error": "Failed to send verification email."},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+# Swagger manual parameters for JWT and form fields
+token_param = openapi.Parameter(
+    'Authorization', openapi.IN_HEADER,
+    description="Bearer token for authentication",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+first_name_param = openapi.Parameter(
+    'first_name', openapi.IN_FORM,
+    description="First name",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+last_name_param = openapi.Parameter(
+    'last_name', openapi.IN_FORM,
+    description="Last name",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+physical_address_param = openapi.Parameter(
+    'physical_address', openapi.IN_FORM,
+    description="Physical address",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+phone_number_param = openapi.Parameter(
+    'phone_number', openapi.IN_FORM,
+    description="Phone number",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+profile_pic_param = openapi.Parameter(
+    'profile_pic', openapi.IN_FORM,
+    description="Profile picture file upload",
+    type=openapi.TYPE_FILE,
+    required=False
+)
+
 class KYCUpdateView(generics.UpdateAPIView):
     """
     Endpoint for updating KYC details for the authenticated client user.
@@ -509,16 +567,20 @@ class KYCUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = KYCUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_object(self):
         return self.request.user
 
     @swagger_auto_schema(
-        operation_description="Update KYC details for the authenticated user. Fields include first name, last name, physical address, phone number, and profile picture.",
-        request_body=KYCUpdateSerializer,
+        operation_description="Update KYC details for the authenticated user. "
+                              "Fields include first name, last name, physical address, phone number, and profile picture.",
+        manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param],
+        consumes=['multipart/form-data'],
         responses={
             200: openapi.Response("KYC update successful."),
-            400: "Invalid input data."
+            400: "Invalid input data.",
+            401: "Unauthorized. Authentication credentials were not provided."
         }
     )
     def patch(self, request, *args, **kwargs):
