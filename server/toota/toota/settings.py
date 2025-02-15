@@ -11,22 +11,28 @@ DEBUG = config('DEBUG', default=True, cast=bool)  # Default to True if not set
 
 ALLOWED_HOSTS = [
     'toota-mobile-sa.onrender.com',  # Production domain
-    '127.0.0.1'  # Local domain (for testing)
+    '127.0.0.1', # Local domain (for testing)
+    'localhost'
 ]  
 
 AUTH_USER_MODEL = 'authentication.User'
 
 INSTALLED_APPS = [
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework.authtoken",
     "drf_yasg",
     "rest_framework",
     "authentication",
-    'corsheaders',  # Added for CORS
+    "trips",
+    'corsheaders',
+    "channels",
+
 ]
 
 MIDDLEWARE = [
@@ -65,6 +71,7 @@ REST_FRAMEWORK = {
 }
 
 WSGI_APPLICATION = "toota.wsgi.application"
+ASGI_APPLICATION = "toota.asgi.application"
 
 # Email settings for Gmail with App Password from .env
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -106,6 +113,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+# settings.py
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.db.DatabaseChannelLayer",
+    }
+}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Alternative to Redis
+    }
+}
+
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

@@ -164,6 +164,10 @@ class KYCSerializer(serializers.ModelSerializer):
         """
         if len(value) < 10:
             raise serializers.ValidationError("Physical address must be at least 10 characters long.")
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Physical address must contain at least one number.")
+        if not any(char.isalpha() for char in value):
+            raise serializers.ValidationError("Physical address must contain at least one letter.")
         return value
 
     def validate_profile_pic(self, value):

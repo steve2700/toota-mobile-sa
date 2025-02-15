@@ -120,9 +120,9 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
    - Choose a project name, database password, and a region for your project.
 
 3. **Retrieve Database Credentials**:  
-   - Navigate to the "Settings" tab in your Supabase project.
-   - Go to the "Database" section.
-   - Copy the database connection string under "Connection Pooling (PostgreSQL)."  
+   - Navigate to the "connect" tab in your Supabase project at the top.
+   - Go to the "ORMs" section.
+   - Copy the database connection string under ".env.local" file  
    - Example:
      ```plaintext
      DATABASE_URL=postgresql://username:password@aws-0-region.pooler.supabase.com:6543/dbname

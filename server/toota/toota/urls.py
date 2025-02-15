@@ -31,6 +31,7 @@ urlpatterns = [
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path("auth/", include("authentication.urls")),  # Authentication-related endpoints
+    path("trips/", include("trips.urls")),  # Location-related endpoints
     # Uncomment the following when the apps are ready:
     # path("trips/", include("trips.urls")),          # Trips-related endpoints
     # path("payments/", include("payments.urls")),    # Payments-related endpoints

@@ -42,6 +42,7 @@ class User(AbstractBaseUser):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    is_superuser = models.BooleanField(default=False) # added for superuser
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -70,10 +71,11 @@ class Driver(AbstractBaseUser):
     """Custom user model for drivers."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, max_length=255)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
-    license_number = models.CharField(max_length=50, unique=True)
-    license_expiry = models.DateField()
+    # license_number = models.CharField(max_length=50, unique=True)
+    # license_expiry = models.DateField()
     vehicle_type = models.CharField(
         max_length=50,
         choices=[
@@ -85,9 +87,9 @@ class Driver(AbstractBaseUser):
             ('8 ton Truck', '8 ton Truck'),
         ]
     )
-    vehicle_registration = models.CharField(max_length=50, unique=True)
+    # vehicle_registration = models.CharField(max_length=50, unique=True)
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
-    number_plate = models.CharField(max_length=50, unique=True)  # Ensuring it's unique
+    # number_plate = models.CharField(max_length=50, unique=True)  # Ensuring it's unique
     profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
     is_active = models.BooleanField(default=False)  # Must be vetted
     is_staff = models.BooleanField(default=False)
@@ -97,6 +99,9 @@ class Driver(AbstractBaseUser):
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    is_available=models.BooleanField(default=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
