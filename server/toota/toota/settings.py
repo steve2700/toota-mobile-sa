@@ -12,28 +12,29 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = [
     'toota-mobile-sa.onrender.com',  # Production domain
-    '127.0.0.1'  # Local domain (for testing)
-]
-
+    '127.0.0.1', # Local domain (for testing)
+    'localhost'
+]  
 
 AUTH_USER_MODEL = 'authentication.User'
 AUTH_DRIVER_MODEL = 'authentication.Driver'
 
 INSTALLED_APPS = [
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework.authtoken",
     "drf_yasg",
     "rest_framework",
     "authentication",
-    'corsheaders',  # For CORS
-    'cloudinary',  # Cloudinary support
-    'cloudinary_storage',  # Cloudinary storage backend
-    'phonenumber_field',
-    'django_extensions',
+    "trips",
+    'corsheaders',
+    "channels",
+
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,18 @@ REST_FRAMEWORK = {
     ),
 }
 
+WSGI_APPLICATION = "toota.wsgi.application"
+ASGI_APPLICATION = "toota.asgi.application"
+
+# Email settings for Gmail with App Password from .env
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587  # Use 465 for SSL, 587 for TLS
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')  # Loaded from .env
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # Loaded from .env
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # Default sender email
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -111,6 +124,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+# settings.py
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.db.DatabaseChannelLayer",
+    }
+}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Alternative to Redis
+    }
+}
+
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
