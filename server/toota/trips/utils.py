@@ -8,14 +8,12 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=
     Uses geopy to calculate real distances.
     """
     available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)  # Get available drivers
-    print(available_drivers)
     drivers_list = []
     pickup_location = (float(pickup_lat), float(pickup_lon))
 
     for driver in available_drivers:
         driver_location = (driver.latitude, driver.longitude)
         distance = geodesic(pickup_location, driver_location).km  # Calculate distance in KM
-        print(distance)
         
         if distance <= radius:  # Only include drivers within the radius
             drivers_list.append({
@@ -23,7 +21,10 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=
                 "distance": round(distance, 2)
             })
 
+
     # Sort drivers by nearest distance and limit results
     drivers_list = sorted(drivers_list, key=lambda x: x["distance"])[:limit]
+    if not drivers_list:
+        return available_drivers
     
     return drivers_list

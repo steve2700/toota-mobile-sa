@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model
 from authentication.models import Driver, User
 from .models import Trip
 from channels.db import database_sync_to_async
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DriverLocationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -48,7 +51,7 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
                     }
                 )
         except Exception as e:
-            print(f"Error processing location update: {e}")
+            logger.error(f"Error processing location update: {e}", exc_info=True)
 
     async def driver_location_update(self, event):
         """ Sends updated location to all connected passengers """
