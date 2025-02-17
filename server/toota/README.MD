@@ -14,6 +14,11 @@
   - [Overview of `.env` File](#overview-of-env-file)
   - [How to Set Up Email Credentials](#how-to-set-up-email-credentials)
   - [How to Set Up the Database with Supabase](#how-to-set-up-the-database-with-supabase)
+- [Trip Management](#trip-management)
+  - [Find Available Drivers](#find-available-drivers)
+  - [Real-Time Trip Requests](#real-time-trip-requests)
+  - [Real-Time Location Updates](#real-time-location-updates)
+  - [Trip Status Updates](#trip-status-updates)
 
 # Toota Backend Server
 
@@ -143,5 +148,108 @@ DIRECT_URL=postgresql://username:password@hostname:port/dbname
    - For more information on setting up and managing your Supabase project, visit the [Supabase Documentation](https://supabase.com/docs).
 
 
+## Trip Management
+The Trip module handles finding available drivers, updating trip status, and real-time communication using WebSockets.
 
+### Find Available Drivers
+A passenger can search for available drivers near their location. The system will return a list of drivers who are currently available to accept a trip request
+
+```bash
+GET /trip/find-driver/
+```
+
+**Response Example**:
+- If available drivers are found**:
+```bash
+{
+    "message": "Available drivers found",
+    "drivers": [
+        {
+            "id": 1,
+            "first_name": "John",
+            "last_name": "Doe"
+            "latitude": 12.34,
+            "longitude": 56.78,
+            "is_available": True,
+            ...
+        },
+        {
+            "id": 2,
+            "first_name": "Barry",
+            "last_name": "Griffin"
+            "latitude": 12.34,
+            "longitude": 56.78,
+            "is_available": True,
+            ...
+        },
+        ...
+    ]
+}
+```
+- If no drivers are found:
+```bash
+{
+   "message": "No available drivers nearby"
+}
+```
+
+## Real-Time Trip Requests
+To provide instant trip requests to drivers, a WebSocket connection is used. When a passenger requests a ride, the system sends a real-time trip request to nearby drivers.
+
+- Websocket connection for the user to request the trip
+```bash
+ws://localhost:8000/ws/trips/user/request/<str:driver_id>/
+```
+* Example payload to be sent to the socket for the user:
+```bash
+{
+   "user_id": 1,
+   "trip_request_status": "this is optional (only included as 'cancelled' if user cancels the trip while request is made)",
+   "trip_info": 
+   {
+      "pickup_lat": 12.56,
+      "destination_lat": 45.67,
+      "pickup": "string text of the location. eg 123 Main Street",
+      "destination": "string text of the location. eg 456 Elm Street",
+      "load_description": "2 large bags, 1 small bag"
+   }
+}
+```
+*if driver accepts, this will be the example response recieved*:
+```bash
+{
+   "trip_id": 1,
+   "status": "accepted"
+}
+```
+*if driver rejects, this will be the example response recieved*:
+```bash
+{
+   "status": "rejected"
+}
+```
+
+- Websocket connection for the driver to request the trip
+```bash
+ws://localhost:8000/ws/trips/driver/response/<str:driver_id>/
+```
+* Example payload to be sent to the socket for the driver:
+```bash
+{
+   "user_id": 1,
+   "trip_response_status": "accepted or rejected"
+}
+```
+
+### Trip Status Updates
+Drivers and passengers can update the status of a trip (e.g., "on the way", "cancelled" ,"picked up," "in progress", "completed").
+```bash
+POST /trips/<str:trip_id>/status/
+```
+Expected response recieved:
+```bash
+{
+   "message": "trip updated successfully"
+}
+```
 

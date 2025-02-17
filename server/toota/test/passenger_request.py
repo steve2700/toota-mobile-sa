@@ -17,7 +17,8 @@ async def passenger_simulation():
             if action == "request":
                 trip_info = {
                     "pickup": "123 Main Street",
-                    "destination": "456 Elm Street"
+                    "destination": "456 Elm Street",
+                    "load_description": "2 large bags, 1 small bag"
                 }
 
                 request_data = {
@@ -26,6 +27,7 @@ async def passenger_simulation():
                 }
 
                 await websocket.send(json.dumps(request_data))
+                # await asyncio.sleep(2000) 
                 print("🚖 Trip request sent to driver...")
 
             elif action == "cancel":
@@ -48,12 +50,15 @@ async def passenger_simulation():
             response = await websocket.recv()
             data = json.loads(response)
 
-            if data.get("status") == "cancelled":
-                print("🛑 Trip was cancelled.")
-            elif "trip_info" in data:
-                print("📨 Driver received the trip request!")
-                print(f"Pickup: {data['trip_info']['pickup']}")
-                print(f"Destination: {data['trip_info']['destination']}")
-
+            if data.get("status") == "reject":
+                print("🛑 Trip was rejected.")
+                break
+            # elif "trip_info" in data:
+            #     print("📨 Driver received the trip request!")
+            #     print(f"Pickup: {data['trip_info']['pickup']}")
+            #     print(f"Destination: {data['trip_info']['destination']}")
+            else:
+                for i in data:
+                    print(f"Driver received the trip request! {data[i]}")
 # Run the passenger simulation
 asyncio.run(passenger_simulation())

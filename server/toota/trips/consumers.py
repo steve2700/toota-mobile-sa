@@ -175,6 +175,13 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
             "status": "cancelled"
         }))
 
+    async def trip_status_update(self, event):
+        """Send trip status update to user."""
+        await self.send(text_data=json.dumps({
+            "trip_id": event["trip_id"],
+            "status": event["status"]
+        }))
+
     async def trip_rejected(self, event):
         """Notify user that the driver has rejected the trip."""
         await self.send(text_data=json.dumps({
@@ -228,8 +235,8 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
                 f"user_{user.id}",
                 {
                     "type": "trip_status_update",
-                    "trip_id": new_trip.id,
-                    "status": "ongoing"
+                    "trip_id": str(new_trip.id),
+                    "status": "accepted"
                 }
             )
 
