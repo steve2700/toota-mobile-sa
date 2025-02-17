@@ -3,9 +3,10 @@ from django.core.validators import MinLengthValidator
 import uuid
 
 class Trip(models.Model):
-    class StatusChoices(models.TextChoices): 
-        PENDING = "ongoing", "Ongoing"
-        PROGRESS = "in_progress", "In Progress"
+    class StatusChoices(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PICKEDUP = "picked up", "Picked up"
+        PROGRESS = "in progress", "In Progress"
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 

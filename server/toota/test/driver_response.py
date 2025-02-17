@@ -1,6 +1,15 @@
 import asyncio
 import websockets
 import json
+import sys, os
+from channels.db import database_sync_to_async
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'toota.settings')
+
+# Import Django and set up the environment
+import django
+django.setup()
+from authentication.models import User
 
 # Driver details
 DRIVER_ID = "1aee28fd-0ce7-498d-8150-7cc0f5ef32b3"   # Change this to the assigned driver ID
@@ -22,9 +31,12 @@ async def driver_simulation():
                 continue
 
             if "trip_info" in data:
+                user = await get_user(data["user_id"])
+                print(f"{user.first_name} {user.last_name} is requesting for a trip")
                 print("\n🚖 New Trip Request Received!")
                 print(f"📍 Pickup: {data['trip_info']['pickup']}")
                 print(f"🎯 Destination: {data['trip_info']['destination']}")
+                print(f"🧳 Load Description: {data['trip_info']['load_description']}")
 
                 action = input("\nEnter 'accept' to accept trip, 'reject' to reject: ").strip().lower()
 
@@ -47,6 +59,10 @@ async def driver_simulation():
 
                 else:
                     print("⚠️ Invalid input. Please enter 'accept' or 'reject'.")
+
+@database_sync_to_async
+def get_user(user_id):
+    return User.objects.get(id=user_id)
 
 # Run the driver simulation
 asyncio.run(driver_simulation())

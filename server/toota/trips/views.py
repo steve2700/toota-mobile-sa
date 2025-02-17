@@ -45,7 +45,7 @@ class FindDriversView(APIView):
         available_drivers = find_nearest_drivers(float(pickup_lat), float(pickup_lon), vehicle_type)
 
         if not available_drivers:
-            return Response({"message": "No available drivers nearby."}, status=status.HTTP_200_OK)
+            return Response({"message": "No available drivers nearby"}, status=status.HTTP_200_OK)
 
         return Response({"message": "Available drivers found", "drivers": available_drivers},
                         status=status.HTTP_200_OK)
@@ -56,7 +56,7 @@ class UpdateTripStatusView(APIView):
     """
     API View to update the status of an existing trip.
     """
-    permission_classes = [IsAuthenticated] # make sure the user is authenticated
+    # permission_classes = [IsAuthenticated] # make sure the user is authenticated
 
     @swagger_auto_schema(
         operation_description="Update trip status (e.g., pending -> accepted -> in_progress -> completed).",
@@ -77,9 +77,15 @@ class UpdateTripStatusView(APIView):
 
         try:
             trip = Trip.objects.get(id=trip_id)
+            driver = Driver.objects.get(id=trip.driver.id)
+            if new_status == "picked up":
+                driver.is_available = False
+                driver.save()
+            elif new_status == "completed":
+                driver.total_trips_completed += 1
+                driver.save()
         except Trip.DoesNotExist:
             return Response({"error": "Trip not found."}, status=status.HTTP_400_BAD_REQUEST)
-
         trip.status = new_status
         trip.save()
         return Response({"message": "Trip status updated successfully."}, status=status.HTTP_200_OK)
