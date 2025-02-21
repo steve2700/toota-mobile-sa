@@ -304,6 +304,7 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
         """
         Verifies the user's ID using an external service and creates a verification record.
         """
+        user = request.user
         if is_rate_limited(user):
             return Response(
                 {'error': 'Rate limit exceeded. Please try again later.'},
