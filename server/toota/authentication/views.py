@@ -293,13 +293,13 @@ class DriverLoginView(APIView):
 class IDVerificationViewSet(viewsets.ModelViewSet):
     queryset = IDVerification.objects.all()
     serializer_class = IDVerificationSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Ensure users only access their own verification records."""
         return self.request.user.verifications.all()
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def verify(self, request):
         """
         Verifies the user's ID using an external service and creates a verification record.
