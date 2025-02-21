@@ -370,7 +370,7 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
             message = "Your ID verification was successful. You can now proceed."
         elif verification.is_verified is None:
             subject = "Verification Pending"
-            message = "Your ID verification is currently being processed. Please check back later.
+            message = "Your ID verification is currently being processed. Please check back later."
         else:
             subject = "Verification Failed"
             message = "Your ID verification failed. Please try again or contact support."
