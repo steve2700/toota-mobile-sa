@@ -304,6 +304,12 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
         """
         Verifies the user's ID using an external service and creates a verification record.
         """
+        if is_rate_limited(user):
+        return Response(
+            {'error': 'Rate limit exceeded. Please try again later.'}, 
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+        
         request_serializer = VerificationRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
 
@@ -328,6 +334,8 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
 
             warnings_data = VerificationWarningSerializer(verification.warnings.all(), many=True).data
 
+            self._send_verification_notification(user.email, verification)
+
             if verification.is_verified is True:
                 return Response({
                     'message': 'Verification completed successfully', 
@@ -351,7 +359,23 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
             return Response({'error': f'Missing expected data: {str(ke)}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': f'An error occurred during verification: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+    
 
+    def _send_verification_notification(self, email, verification):
+        """
+        Sends different notifications based on verification outcome.
+        """
+        if verification.is_verified is True:
+            subject = "Verification Successful"
+            message = "Your ID verification was successful. You can now proceed."
+        elif verification.is_verified is None:
+            subject = "Verification Pending"
+            message = "Your ID verification is currently being processed. Please check back later.
+        else:
+            subject = "Verification Failed"
+            message = "Your ID verification failed. Please try again or contact support."
+
+        send_notification(email, subject, message)
     def _process_warnings(self, warnings):
     # Default warning flags
         warning_flags = {
@@ -409,7 +433,7 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
             'state': data.get('stateFull', [{}])[0].get('value'),
             'country': data.get('countryFull', [{}])[0].get('value'),
             **warning_flags,  # Include all warning flags
-            'user': user.id
+            'user': user.email
         }
 
     def _create_warning_records(self, warnings, verification):
