@@ -416,23 +416,23 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
         }
 
     def _create_warning_records(self, warnings, verification):
-        """
-        Creates warning records associated with a single verification instance.
-        """
-        warning_objects = [
-            VerificationWarning(
-                verification=verification,
-                code=warning['code'],
-                description=warning['description'],
-                severity=warning['severity'],
-                confidence=warning['confidence'],
-                decision=warning['decision'],
-                category=self._categorize_warning(warning['code']),
-                additional_data=warning.get('data')
-            )
-            for warning in warnings
-        ]
-        VerificationWarning.objects.bulk_create(warning_objects)
+    """
+    Creates warning records associated with a single verification instance.
+    """
+    warning_objects = [
+        VerificationWarning(
+            verification=verification,
+            code=warning['code'],
+            description=warning['description'],
+            severity=warning['severity'],
+            confidence=warning['confidence'],
+            decision=warning['decision'],
+            category=self._categorize_warning(warning['code']),
+            additional_data=warning.get('data')
+        )
+        for warning in warnings
+    ]
+    VerificationWarning.objects.bulk_create(warning_objects)
 
     def _categorize_warning(self, code):
         """
