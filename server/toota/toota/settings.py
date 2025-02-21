@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')  # Load secret key from .env
 DEBUG = config('DEBUG', default=True, cast=bool)  # Default to True if not set
 
-ALLOWED_HOSTS = ['toota-mobile-sa.onrender.com']  # Add your domain to ALLOWED_HOSTS
+ALLOWED_HOSTS = ['toota-mobile-sa.onrender.com', "localhost"]  # Add your domain to ALLOWED_HOSTS
 
 AUTH_USER_MODEL = 'authentication.User'
 
@@ -111,5 +111,6 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+ID_ANALYZER_API_KEY = config("ID_ANALYZER_API_KEY")
 
-FIELD_ENCRYPTION_KEY = config("DJANGO_ENCRYPTED_FIELDS_KEY")
+PROFILE_ID = config("PROFILE_ID")

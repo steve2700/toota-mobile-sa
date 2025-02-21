@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from django.core.validators import validate_email
 from django.utils import timezone
 from django.utils.timezone import timedelta
-from .models import User,Driver, OTP
+from .models import User,Driver, OTP, IDVerification, VerificationWarning
 from .utils import generate_otp, send_otp_email
 
 class UserSignupSerializer(serializers.ModelSerializer):
@@ -303,9 +303,19 @@ class DriverResendOTPSerializer(serializers.Serializer):
         return driver
 
 
-from .models import DriverCheck
-
-class DriverCheckSerializer(serializers.ModelSerializer):
+class VerificationWarningSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DriverCheck
-        fields = ['user', 'name', 'uploaded_image', 'geo_location', 'expiry_date']
+        model = VerificationWarning
+        fields = '__all__'
+
+
+class IDVerificationSerializer(serializers.ModelSerializer):
+    warnings = VerificationWarningSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = IDVerification
+        fields = '__all__'
+
+class VerificationRequestSerializer(serializers.Serializer):
+    document_url = serializers.URLField()
+    face_url = serializers.URLField()

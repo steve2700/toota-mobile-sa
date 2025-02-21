@@ -2,12 +2,15 @@ import logging
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from django.core.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken  # For token generation
 from rest_framework.parsers import MultiPartParser, FormParser
+from .util.verification import IDAnalyzerService
 from .serializers import (
     UserSignupSerializer, 
     EmailVerificationSerializer,
@@ -17,14 +20,14 @@ from .serializers import (
     DriverSignupSerializer,
     DriverEmailVerificationSerializer,
     DriverLoginSerializer,
-    DriverCheckSerializer
+    IDVerificationSerializer,
+    VerificationWarningSerializer,
+    VerificationRequestSerializer
 )
-from .util.verification import (extract_text, compare_faces, 
-                                extract_expiry_date,validate_expiry,
-                                get_dynamic_threshold,detect_watermark)
-from .util.audit_logs import log_verification_attempt
+from .util.verification import IDAnalyzerService
 from .util.notifications import send_notification
 from .util.rate_limiting import is_rate_limited
+from .models import IDVerification,VerificationWarning
 class SignupView(APIView):
     """
     API View to handle user signup.
@@ -287,64 +290,157 @@ class DriverLoginView(APIView):
         logger.error(f"Login failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class IDVerificationViewSet(viewsets.ModelViewSet):
+    queryset = IDVerification.objects.all()
+    serializer_class = IDVerificationSerializer
+    permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        """Ensure users only access their own verification records."""
+        return self.request.user.verifications.all()
 
-class DriverCheckView(APIView):
-    """
-    API View for driver KYC authentication with encrypted storage.
-    """
-    def post(self, request, *args, **kwargs):
-        # Rate Limiting Check
-        if is_rate_limited(request.user):
-            return Response({"message": "Rate limit exceeded. Try again later."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def verify(self, request):
+        """
+        Verifies the user's ID using an external service and creates a verification record.
+        """
+        request_serializer = VerificationRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
 
-        serializer = DriverCheckSerializer(data=request.data)
-        if serializer.is_valid():
-            driver_check = serializer.save()
+        try:
+            analyzer = IDAnalyzerService()
+            api_response = analyzer.verify_identity(
+                document_url=request_serializer.validated_data['document_url'],
+                face_url=request_serializer.validated_data['face_url']
+                )
+        # Process warnings
+            warning_flags = self._process_warnings(api_response.get('warning', []))
 
-            # Extract text and expiry date from the document
-            document_image_path = driver_check.uploaded_image.path
-            extracted_text = extract_text(document_image_path)
-            extracted_expiry_date = extract_expiry_date(document_image_path)
+        # Construct verification data
+            verification_data = self._construct_verification_data(api_response, request.user, warning_flags)
 
-            if not extracted_expiry_date:
-                return Response({"message": "Could not extract expiry date from the document."}, status=status.HTTP_400_BAD_REQUEST)
+        # Use IDVerificationSerializer explicitly for saving
+            verification_serializer = IDVerificationSerializer(data=verification_data)
+            verification_serializer.is_valid(raise_exception=True)
+            verification = verification_serializer.save()
 
-            # Validate expiry date
-            if not validate_expiry(extracted_expiry_date):
-                log_verification_attempt(request.user, status=False, reason="Expired document.")
-                send_notification(request.user.email, "Verification Failed", "Your document has expired.")
-                return Response({"message": "Verification failed. Document expired."}, status=status.HTTP_400_BAD_REQUEST)
-            if not detect_watermark(document_image_path):
-                return Response({"message": "Verification failed. No watermark detected on the document."}, status=status.HTTP_400_BAD_REQUEST)
-            # Geo-Location Verification
-            # user_location = request.data.get("location")  # Assume location is sent in the request
-            # if not validate_geo_location(user_location):
-            #     log_verification_attempt(request.user, status=False, reason="Invalid location.")
-            #     return Response({"message": "Verification failed. Invalid location."}, status=status.HTTP_400_BAD_REQUEST)
+            warnings = verification.warnings.all()
+            warnings_data = VerificationWarningSerializer(warnings, many=True).data
 
-            # Perform text match
-            if driver_check.name.lower() in extracted_text.lower():
-                # Use the uploaded face image for face comparison
-                face_image_path = driver_check.face_image.path
-                face_match_score = compare_faces(document_image_path, face_image_path)
-                dynamic_threshold = get_dynamic_threshold(request.user)
-                
-                if face_match_score >= dynamic_threshold:
-                    driver_check.is_verified = True
-                    driver_check.extracted_text = extracted_text  # Encrypt extracted text
-                    driver_check.expiry_date = extracted_expiry_date  # Encrypt expiry date
-                    driver_check.save()
-
-                    log_verification_attempt(request.user, status=True)
-                    send_notification(request.user.email, "Verification Successful", "Your verification was successful.")
-                    return Response({"message": "Verification successful. Name, face, and expiry date match."}, status=status.HTTP_200_OK)
-                else:
-                    log_verification_attempt(request.user, status=False, reason="Face does not match.")
-                    send_notification(request.user.email, "Verification Failed", "Your face does not match the document.")
-                    return Response({"message": "Verification failed. Face does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            if verification.is_verified is True:
+                return Response({
+                    'message': 'Verification completed successfully',
+                    'is_verified': True,
+                    'verification': verification_serializer.data,
+                    'warnings': warnings_data
+                    },status=200)
+            elif verification.is_verified is None:
+                return Response({
+                    'message': 'Verification is pending',
+                    'is_verified': None,
+                    'verification': verification_serializer.data,
+                    'warnings': warnings_data
+                    }, status=202) 
             else:
-                log_verification_attempt(request.user, status=False, reason="Name does not match.")
-                return Response({"message": "Verification failed. Name does not match."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'message': 'Verification failed',
+                    'is_verified': False,
+                    'verification': verification_serializer.data
+                    }, status=400)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except KeyError as ke:
+            return Response({'error': f'Missing expected data: {str(ke)}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': f'An error occurred during verification: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def _process_warnings(self, warnings):
+    # Default warning flags
+        warning_flags = {
+            'is_expired': False,
+            'is_fake': False,
+            'image_edited': False,
+            'is_sanctioned': False,
+            'has_forgery': False,
+            'screen_detected': False,
+            'face_verification_failed': False,
+            'is_black_white': False
+            }
+            
+        for warning in warnings:
+            
+            if warning["code"] == "DOCUMENT_EXPIRED":
+                warning_flags["is_expired"] = True
+            elif warning["code"] == "FAKE_ID":
+                warning_flags["is_fake"] = True
+            elif warning["code"] == "IMAGE_EDITED":
+                warning_flags["image_edited"] = True
+            elif warning["code"] == "AML_SANCTION":
+                warning_flags["is_sanctioned"] = True
+            elif warning["code"] == "IMAGE_FORGERY":
+                warning_flags["has_forgery"] = True
+            elif warning["code"] == "SCREEN_DETECTED":
+                warning_flags["screen_detected"] = True
+            elif warning["code"] == "FACE_LIVENESS_ERR":
+                warning_flags["face_verification_failed"] = True
+            elif warning["code"] == "BLACK_WHITE_DOCUMENT":
+                warning_flags["is_black_white"] = True
+
+        return warning_flags
+    def _construct_verification_data(self, api_response, user, warning_flags):
+        data = api_response.get('data', {})
+        return {
+            'transaction_id': api_response['transactionId'],
+            'success': api_response['success'],
+            'execution_time': api_response['executionTime'],
+            'review_score': api_response['reviewScore'],
+            'reject_score': api_response['rejectScore'],
+            'decision': api_response['decision'],
+            'first_name': data.get('firstName', [{}])[0].get('value'),
+            'last_name': data.get('lastName', [{}])[0].get('value'),
+            'document_number': data.get('documentNumber', [{}])[0].get('value'),
+            'date_of_birth': data.get('dob', [{}])[0].get('value'),
+            'sex': data.get('sex', [{}])[0].get('value'),
+            'document_type': data.get('documentType', [{}])[0].get('value'),
+            'expiry_date': data.get('expiry', [{}])[0].get('value'),
+            'issue_date': data.get('issued', [{}])[0].get('value'),
+            'height': data.get('height', [{}])[0].get('value'),
+            'weight': data.get('weight', [{}])[0].get('value'),
+            'hair_color': data.get('hairColor', [{}])[0].get('value'),
+            'address': data.get('address1', [{}])[0].get('value'),
+            'state': data.get('stateFull', [{}])[0].get('value'),
+            'country': data.get('countryFull', [{}])[0].get('value'),
+            **warning_flags,  # Include all warning flags
+            'user': user.id
+        }
+
+    def _create_warning_records(self, warnings, verification):
+        for warning in warnings:
+            VerificationWarning.objects.create(
+                verification=verification,
+                code=warning['code'],
+                description=warning['description'],
+                severity=warning['severity'],
+                confidence=warning['confidence'],
+                decision=warning['decision'],
+                category=self._categorize_warning(warning['code']),
+                additional_data=warning.get('data')
+            )
+
+    def _categorize_warning(self, code):
+        """
+        Categorizes the warning code into document, security, or other.
+        """
+        categories = {
+            'DOCUMENT_EXPIRED': 'document',
+            'FAKE_ID': 'document',
+            'IMAGE_EDITED': 'document',
+            'MISSING_EYE_COLOR': 'document',
+            'BLACK_WHITE_DOCUMENT': 'document',
+            'AML_SANCTION': 'security',
+            'IMAGE_FORGERY': 'security',
+            'TEXT_FORGERY': 'security',
+            'SCREEN_DETECTED': 'security',
+            'FACE_LIVENESS_ERR': 'security'
+        }
+        return categories.get(code, 'other')

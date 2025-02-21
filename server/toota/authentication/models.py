@@ -3,7 +3,6 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
-from encrypted_model_fields.fields import EncryptedCharField, EncryptedDateField
 # User Manager
 class UserManager(BaseUserManager):
     """Custom user manager for clients."""
@@ -144,16 +143,99 @@ class OTP(models.Model):
         return self.created_at < expiration_time
 
 
+class VerificationWarning(models.Model):
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High')
+    ]
 
+    DECISION_CHOICES = [
+        ('accept', 'Accept'),
+        ('review', 'Review'),
+        ('reject', 'Reject')
+    ]
 
+    code = models.CharField(max_length=50)
+    description = models.TextField()
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES)
+    confidence = models.FloatField()
+    decision = models.CharField(max_length=10, choices=DECISION_CHOICES)
+    category = models.CharField(max_length=50)
+    additional_data = models.JSONField(null=True, blank=True)
+    verification = models.ForeignKey('IDVerification', on_delete=models.CASCADE, related_name='warnings')
 
-class DriverCheck(models.Model):
-    name = models.CharField(max_length=255)
-    uploaded_image = models.ImageField(upload_to="uploads/documents/")  # Encrypt uploaded images
-    face_image = models.ImageField(upload_to="uploads/faces/")          # Encrypt face images
-    extracted_text = EncryptedCharField(max_length=500)                   # Encrypt extracted text
-    expiry_date = EncryptedDateField()                                    # Encrypt expiry dates
-    is_verified = models.BooleanField(default=False)
+class IDVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verifications',null=True)
+    transaction_id = models.CharField(max_length=100)
+    success = models.BooleanField(default=False)
+    execution_time = models.FloatField()
+    review_score = models.IntegerField()
+    reject_score = models.IntegerField()
+    decision = models.CharField(max_length=20)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    document_number = models.CharField(max_length=50)
+    date_of_birth = models.DateField()
+    sex = models.CharField(max_length=1)
+    document_type = models.CharField(max_length=50)
+    expiry_date = models.DateField()
+    issue_date = models.DateField()
+    height = models.CharField(max_length=20, null=True, blank=True)
+    weight = models.CharField(max_length=20, null=True, blank=True)
+    hair_color = models.CharField(max_length=20, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    state = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+    is_expired = models.BooleanField(default=False)
+    is_fake = models.BooleanField(default=False)
+    image_edited = models.BooleanField(default=False)
+    is_sanctioned = models.BooleanField(default=False)
+    has_forgery = models.BooleanField(default=False)
+    screen_detected = models.BooleanField(default=False)
+    face_verification_failed = models.BooleanField(default=False)
+    is_black_white = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.name
+    @property
+    def is_verified(self):
+        """
+        Returns True only if the API decision is 'accept' and there are no critical warnings
+        """
+        return (
+            self.decision == 'accept' and
+            not any([
+                self.is_expired,
+                self.is_fake,
+                self.image_edited,
+                self.is_sanctioned,
+                self.has_forgery,
+                self.screen_detected,
+                self.face_verification_failed,
+                self.is_black_white
+            ])
+        )
+
+    @property
+    def warning_summary(self):
+        """
+        Returns a summary of all active warnings
+        """
+        warnings = []
+        if self.is_expired:
+            warnings.append("Document is expired")
+        if self.is_fake:
+            warnings.append("Potentially fake document")
+        if self.image_edited:
+            warnings.append("Image was edited")
+        if self.is_sanctioned:
+            warnings.append("Found in sanctions database")
+        if self.has_forgery:
+            warnings.append("Possible forgery detected")
+        if self.screen_detected:
+            warnings.append("Screen capture detected")
+        if self.face_verification_failed:
+            warnings.append("Face verification failed")
+        if self.is_black_white:
+            warnings.append("Black and white copy")
+        return ', '.join(warnings)
