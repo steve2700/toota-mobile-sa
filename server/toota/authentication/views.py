@@ -324,26 +324,30 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
             verification_serializer.is_valid(raise_exception=True)
             verification = verification_serializer.save()
 
-            warnings = verification.warnings.all()
-            warnings_data = VerificationWarningSerializer(warnings, many=True).data
+            self._create_warning_records(api_response.get('warning', []), verification)
+
+            warnings_data = VerificationWarningSerializer(verification.warnings.all(), many=True).data
 
             if verification.is_verified is True:
                 return Response({
-                    'message': 'Verification completed successfully',
+                    'message': 'Verification completed successfully', 
                     'is_verified': True,
-                    'verification': verification_serializer.data
+                    'verification': verification_serializer.data,
+                    'warnings': warnings_data
                     },status=200)
             elif verification.is_verified is None:
                 return Response({
                     'message': 'Verification is pending',
                     'is_verified': None,
-                    'verification': verification_serializer.data
+                    'verification': verification_serializer.data,
+                    'warnings': warnings_data
                     }, status=202) 
             else:
                 return Response({
                     'message': 'Verification failed',
                     'is_verified': False,
-                    'verification': verification_serializer.data
+                    'verification': verification_serializer.data,
+                    'warnings': warnings_data
                      }, status=400)
 
         except KeyError as ke:
@@ -412,8 +416,11 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
         }
 
     def _create_warning_records(self, warnings, verification):
-        for warning in warnings:
-            VerificationWarning.objects.create(
+        """
+        Creates warning records associated with a single verification instance.
+        """
+        warning_objects = [
+            VerificationWarning(
                 verification=verification,
                 code=warning['code'],
                 description=warning['description'],
@@ -423,6 +430,9 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
                 category=self._categorize_warning(warning['code']),
                 additional_data=warning.get('data')
             )
+            for warning in warnings
+        ]
+        VerificationWarning.objects.bulk_create(warning_objects)
 
     def _categorize_warning(self, code):
         """
