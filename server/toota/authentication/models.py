@@ -164,6 +164,16 @@ class VerificationWarning(models.Model):
     category = models.CharField(max_length=50)
     additional_data = models.JSONField(null=True, blank=True)
     verification = models.ForeignKey('IDVerification', on_delete=models.CASCADE, related_name='warnings')
+    warnings = models.JSONField(default=list)  # Stores all warnings in a JSON array
+
+    def add_warnings(self, new_warnings):
+        """Adds new warnings without creating multiple records."""
+        self.warnings.extend(new_warnings)
+        self.save()
+
+    def get_warnings(self):
+        """Returns all stored warnings."""
+        return self.warnings
 
 class IDVerification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verifications',null=True)
