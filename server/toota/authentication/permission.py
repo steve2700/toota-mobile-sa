@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission
-from profiles.models import IDVerification
+from .models import IDVerification
 
 class IsVerifiedDriver(BasePermission):
     """
