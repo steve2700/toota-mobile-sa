@@ -331,144 +331,20 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
                 return Response({
                     'message': 'Verification completed successfully',
                     'is_verified': True,
-                    'verification': verification_serializer.data,
-                    'warnings': warnings_data
+                    'verification': verification_serializer.data
                     },status=200)
             elif verification.is_verified is None:
                 return Response({
                     'message': 'Verification is pending',
                     'is_verified': None,
-                    'verification': verification_serializer.data,
-                    'warnings': warnings_data
+                    'verification': verification_serializer.data
                     }, status=202) 
             else:
                 return Response({
                     'message': 'Verification failed',
                     'is_verified': False,
-                    'verification': verification_serializer.data,
-                                        'warnings': warnings_data
-                                        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
-
- 
-
-
-
-
-
-
-
-
-     
-
-
-
-
-
-
-
-          }, status=400)
-
+                    'verification': verification_serializer.data
+                     }, status=400)
 
         except KeyError as ke:
             return Response({'error': f'Missing expected data: {str(ke)}'}, status=status.HTTP_400_BAD_REQUEST)
