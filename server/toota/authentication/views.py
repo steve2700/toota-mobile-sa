@@ -305,10 +305,10 @@ class IDVerificationViewSet(viewsets.ModelViewSet):
         Verifies the user's ID using an external service and creates a verification record.
         """
         if is_rate_limited(user):
-        return Response(
-            {'error': 'Rate limit exceeded. Please try again later.'}, 
-            status=status.HTTP_429_TOO_MANY_REQUESTS
-        )
+            return Response(
+                {'error': 'Rate limit exceeded. Please try again later.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
         
         request_serializer = VerificationRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
