@@ -11,7 +11,8 @@ from .serializers import (
     TripDescriptionSerializer,
     UpdateTripStatusSerializer
 )
-from .utils import find_nearest_drivers  # Function to fetch nearest drivers
+from .utils import find_nearest_drivers, get_route_data 
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,3 +90,41 @@ class UpdateTripStatusView(APIView):
         trip.status = new_status
         trip.save()
         return Response({"message": "Trip status updated successfully."}, status=status.HTTP_200_OK)
+
+
+class CalculateFareView(APIView):
+    """
+    POST endpoint to calculate and return an estimated fare for a trip.
+    Expected payload includes pickup and destination coordinates,
+    vehicle_type, and an optional surge flag.
+    """
+    def post(self, request, *args, **kwargs):
+        serializer = TripDescriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            
+            # Extract coordinates and other parameters
+            pickup_lat = data.get('pickup_lat')
+            pickup_lon = data.get('pickup_lon')
+            dest_lat = data.get('dest_lat')
+            dest_lon = data.get('dest_lon')
+            surge = data.get('surge', False)
+            vehicle_types = data.get('vehicle_type')
+            vehicle_type = vehicle_types[0] if vehicle_types else None
+            
+            # Call the OSRM API to get the real distance and time estimates
+            route_data = get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon)
+            distance_km = route_data["distance_km"]
+            estimated_time_minutes = route_data["duration_min"]
+            
+            # Create a temporary Trip instance (or use a service method) to calculate fare
+            trip = Trip(vehicle_type=vehicle_type, pickup=f\"{pickup_lat},{pickup_lon}\", destination=f\"{dest_lat},{dest_lon}\")
+            estimated_fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
+            
+            return Response({
+                'estimated_fare': estimated_fare,
+                'distance_km': distance_km,
+                'estimated_time_minutes': estimated_time_minutes
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
