@@ -10,13 +10,13 @@ final loginProvider = FutureProvider.family<bool, Map<String, String>>((ref, cre
   try {
     final response = await dio.post(
       'https://toota-mobile-sa.onrender.com/swagger/login/user',
-      data: {'phone': credentials['phone'], 'password': credentials['password']},
+      data: {'email': credentials['email'], 'password': credentials['password']},
     );
 
     if (response.statusCode == 200) {
       return true; // Login successful
     } else {
-      throw Exception('Invalid phone number or password');
+      throw Exception('Invalid Email or password');
     }
   } catch (e) {
     throw Exception('Login failed: $e');
@@ -31,21 +31,21 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   void _handleLogin() async {
-    String phone = _phoneController.text.trim();
+    String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    if (phone.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Phone and password are required')),
+        const SnackBar(content: Text('Email and password are required')),
       );
       return;
     }
 
-    final login = ref.read(loginProvider({'phone': phone, 'password': password}).future);
+    final login = ref.read(loginProvider({'email': email, 'password': password}).future);
     try {
       bool isSuccess = await login;
       if (isSuccess) {
@@ -65,7 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final loginState = ref.watch(loginProvider({'phone': '', 'password': ''}));
+    final loginState = ref.watch(loginProvider({'email': '', 'password': ''}));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -92,11 +92,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 32),
             TextField(
-              controller: _phoneController,
+              controller: _emailController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                labelText: 'Phone number',
-                prefixIcon: const Icon(Icons.phone, color: Colors.orange),
+                labelText: 'Email',
+                prefixIcon: const Icon(Icons.email, color: Colors.orange),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),

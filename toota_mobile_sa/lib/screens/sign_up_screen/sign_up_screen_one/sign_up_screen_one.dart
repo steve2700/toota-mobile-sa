@@ -31,7 +31,7 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
 
       if (response.statusCode == 200) {
         // Navigate to the next screen
-        Navigator.pushNamed(context, '/home'); // Update with the correct route
+        Navigator.pushNamed(context, '/login'); // Update with the correct route
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Invalid OTP, please try again')),
