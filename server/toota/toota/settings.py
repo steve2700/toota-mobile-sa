@@ -20,6 +20,7 @@ AUTH_DRIVER_MODEL = 'authentication.Driver'
 
 INSTALLED_APPS = [
     'daphne',
+    "authentication",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -29,7 +30,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_yasg",
     "rest_framework",
-    "authentication",
     "trips",
     "corsheaders",
     "cloudinary_storage",
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     ##"django_extension",
 
 ]
+AUTH_USER_MODEL = 'authentication.User'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware should be at the top
@@ -112,19 +113,6 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-<<<<<<< HEAD
-=======
-cloudinary.config(
-    cloud_name = config('CLOUDINARY_CLOUD_NAME'),
-    api_key = config('CLOUDINARY_API_KEY'),
-    api_secret = config('CLOUDINARY_API_SECRET'),
-    secure=True
-)
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-
-# Database settings - Load the URL from the .env file
->>>>>>> 0a68f80 (add the trip and auth)
 DATABASES = {
     "default": dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -133,21 +121,7 @@ DATABASES = {
     )
 }
 
-<<<<<<< HEAD
 DIRECT_URL = config('DIRECT_URL')
-=======
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header',
-        },
-    },
-}
-# Direct database URL for migrations
-DIRECT_URL = config('DIRECT_URL')  # Loaded from .env
->>>>>>> 0a68f80 (add the trip and auth)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

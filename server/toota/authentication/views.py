@@ -11,6 +11,8 @@ from rest_framework import status,generics,permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import IntegrityError
+
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
