@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/auth_provider_create.dart'; // Import the provider
+import 'package:toota_mobile_sa/providers/auth_provider_create.dart'; // Import the provider
 import 'package:toota_mobile_sa/constants.dart';
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
