@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:toota_mobile_sa/constants.dart';
 
 final dioProvider = Provider((ref) => Dio());
 
@@ -49,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       bool isSuccess = await login;
       if (isSuccess) {
-        Navigator.pushNamed(context, '/dashboard'); // Navigate to dashboard on success
+        Navigator.pushReplacementNamed(context, RouteNames.role); // Navigate to dashboard on success
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid credentials, please try again')),

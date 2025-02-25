@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:toota_mobile_sa/constants.dart';
  // Import the provider
 
 class SignUpScreenOne extends ConsumerStatefulWidget {
@@ -35,7 +36,7 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
           const SnackBar(content: Text('OTP verified successfully')),
         );
          // Navigate to the next screen
-        Navigator.pushNamed(context, '/login');
+       Navigator.pushReplacementNamed(context, RouteNames.login);
          
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

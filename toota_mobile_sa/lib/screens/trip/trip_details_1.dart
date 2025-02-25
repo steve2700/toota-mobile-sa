@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-
 final vehicleTypeProvider = StateProvider<String?>((ref) => null);
 final bidPriceProvider = StateProvider<String>((ref) => '');
 final loadDescriptionProvider = StateProvider<String>((ref) => '');
+
 
 class TripDetailsScreen extends ConsumerWidget {
   @override

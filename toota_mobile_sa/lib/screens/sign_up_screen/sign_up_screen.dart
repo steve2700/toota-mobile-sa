@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider_create.dart'; // Import the provider
-
+import 'package:toota_mobile_sa/constants.dart';
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
 
@@ -42,7 +42,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sign up successful. Please verify your email')),
       );
-      Navigator.pushNamed(context, '/otp');
+      Navigator.pushReplacementNamed(context, RouteNames.signUpOne);
       // Navigate to next screen if needed
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,7 +159,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             TextButton(
               // ignore: use_function_type_syntax_for_parameters
               onPressed: () {
-                Navigator.pushNamed(context, '/login');
+                Navigator.pushReplacementNamed(context, RouteNames.login);
               },
               child: const Text('I already have an account'),
             )
