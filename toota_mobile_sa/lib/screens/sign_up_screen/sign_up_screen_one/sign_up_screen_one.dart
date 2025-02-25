@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+import 'package:toota_mobile_sa/providers/otp_provider.dart';
 import 'package:toota_mobile_sa/constants.dart';
- // Import the provider
-
 class SignUpScreenOne extends ConsumerStatefulWidget {
   const SignUpScreenOne({Key? key}) : super(key: key);
 
@@ -13,76 +11,56 @@ class SignUpScreenOne extends ConsumerStatefulWidget {
 
 class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
   final TextEditingController _otpController = TextEditingController();
-  final String email = "The verification code has been sent to your email"; // Replace with actual phone number
+  final String email = "user@example.com"; // Replace with dynamic email
   bool _isResending = false;
-  Future<void> _verifyOtp() async {
-    String otp = _otpController.text.trim();
-    if (otp.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid 4-digit OTP')),
-      );
-      return;
-    }
 
-    try {
-      final response = await Dio().post(
-        'https://toota-mobile-sa.onrender.com/swagger/verify-email/',
-        data: {'email': email, 'otp': otp},
-      );
-
-      if (response.statusCode == 200) {
-       
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP verified successfully')),
-        );
-         // Navigate to the next screen
-       Navigator.pushReplacementNamed(context, RouteNames.login);
-         
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid OTP, please try again')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error verifying OTP: $e')),
-      );
-    }
+  void _verifyOtp() {
+  String otp = _otpController.text.trim();
+  if (otp.length != 4) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
+    );
+    return;
   }
-  Future<void> _resendOtp() async {
-    setState(() {
-      _isResending = true;
-    });
 
-    try {
-      final response = await Dio().post(
-        'https://toota-mobile-sa.onrender.com/swagger/resend-code/',
-        data: {'email': email},
+  ref.read(verifyOtpProvider({"email": email, "otp": otp}).future).then((result) {
+    if (result["success"]) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP verified successfully')),
       );
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP resent successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to resend OTP, try again')),
-        );
-      }
-    } catch (e) {
+      // Navigate to Home or Next Signup Step
+      Navigator.pushReplacementNamed(context, RouteNames.login);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result["error"] ?? 'Invalid OTP, please try again')),
+      );
+    }
+  });
+
+
+    ref.refresh(verifyOtpProvider({"email": email, "otp": otp}));
+  }
+
+  void _resendOtp() {
+    setState(() => _isResending = true);
+    ref.read(resendOtpProvider(email).future).then((result) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result["success"] ? "OTP resent successfully" : "Failed to resend OTP")),
+      );
+    }).catchError((e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error resending OTP: $e')),
       );
-    }
-
-    setState(() {
-      _isResending = false;
+    }).whenComplete(() {
+      setState(() => _isResending = false);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final verifyState = ref.watch(verifyOtpProvider({"email": email, "otp": _otpController.text.trim()}));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -93,13 +71,9 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.orange),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.orange),
+              onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -112,24 +86,14 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(
-                4,
-                (index) => SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: TextField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 4,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      counterText: "",
-                    ),
-                  ),
-                ),
+            TextField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 4,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                counterText: "",
               ),
             ),
             const SizedBox(height: 24),
@@ -144,21 +108,26 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Verify OTP',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: verifyState.when(
+                  data: (data) => Text(
+                    data["success"] ? 'Verified' : 'Verify OTP',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  loading: () => const CircularProgressIndicator(color: Colors.white),
+                  error: (error, _) => const Text('Error', style: TextStyle(color: Colors.red)),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Center(
-             child: TextButton(
-                onPressed: _isResending ? null : _resendOtp, // Disable when resending
+              child: TextButton(
+                onPressed: _isResending ? null : _resendOtp,
                 child: _isResending
-                    ? const CircularProgressIndicator() // Show loader
+                    ? const CircularProgressIndicator()
                     : const Text('Resend OTP', style: TextStyle(color: Colors.orange)),
+              ),
             ),
-    )          ],
+          ],
         ),
       ),
     );
