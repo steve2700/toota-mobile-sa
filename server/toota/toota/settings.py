@@ -3,7 +3,6 @@ from datetime import timedelta
 from decouple import config
 import dj_database_url
 import cloudinary
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load sensitive information from .env
@@ -32,8 +31,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "authentication",
     "trips",
-    'corsheaders',
+    "corsheaders",
+    "cloudinary_storage",
+    'cloudinary',
+    ##'django_extensions',
     "channels",
+    "phonenumber_field",
+    ##"django_extension",
 
 ]
 
@@ -108,6 +112,19 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
+<<<<<<< HEAD
+=======
+cloudinary.config(
+    cloud_name = config('CLOUDINARY_CLOUD_NAME'),
+    api_key = config('CLOUDINARY_API_KEY'),
+    api_secret = config('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+# Database settings - Load the URL from the .env file
+>>>>>>> 0a68f80 (add the trip and auth)
 DATABASES = {
     "default": dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -116,7 +133,21 @@ DATABASES = {
     )
 }
 
+<<<<<<< HEAD
 DIRECT_URL = config('DIRECT_URL')
+=======
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+        },
+    },
+}
+# Direct database URL for migrations
+DIRECT_URL = config('DIRECT_URL')  # Loaded from .env
+>>>>>>> 0a68f80 (add the trip and auth)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

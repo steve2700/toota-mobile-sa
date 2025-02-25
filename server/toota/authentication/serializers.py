@@ -192,6 +192,7 @@ class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     def validate_email(self, value):
         """
@@ -296,3 +297,5 @@ class KYCSerializer(serializers.ModelSerializer):
         return value
 
 >>>>>>> d5a8e94 (feat: finished trip implementation:)
+=======
+>>>>>>> 0a68f80 (add the trip and auth)
