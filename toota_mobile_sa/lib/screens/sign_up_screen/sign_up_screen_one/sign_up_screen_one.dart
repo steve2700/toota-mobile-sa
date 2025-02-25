@@ -12,7 +12,7 @@ class SignUpScreenOne extends ConsumerStatefulWidget {
 
 class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
   final TextEditingController _otpController = TextEditingController();
-  final String phoneNumber = "+23300000000"; // Replace with actual phone number
+  final String email = "The verification code has been sent to your email"; // Replace with actual phone number
 
   Future<void> _verifyOtp() async {
     String otp = _otpController.text.trim();
@@ -25,13 +25,18 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
 
     try {
       final response = await Dio().post(
-        'https://toota-mobile-sa.onrender.com/swagger/verify-otp/',
-        data: {'phone': phoneNumber, 'otp': otp},
+        'https://toota-mobile-sa.onrender.com/swagger/verify-email/',
+        data: {'email': email, 'otp': otp},
       );
 
       if (response.statusCode == 200) {
-        // Navigate to the next screen
-        Navigator.pushNamed(context, '/login'); // Update with the correct route
+       
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP verified successfully')),
+        );
+         // Navigate to the next screen
+        Navigator.pushNamed(context, '/login');
+         
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Invalid OTP, please try again')),
@@ -47,7 +52,7 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final resendOtpState = ref.watch(resendOtpProvider(phoneNumber));
+    final resendOtpState = ref.watch(resendOtpProvider(email));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -73,7 +78,7 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter the OTP sent to your number $phoneNumber',
+              'Enter the OTP sent to your email $email',
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const SizedBox(height: 32),
@@ -119,7 +124,7 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
             Center(
               child: resendOtpState.when(
                 data: (_) => TextButton(
-                  onPressed: () => ref.read(resendOtpProvider(phoneNumber).future),
+                  onPressed: () => ref.read(resendOtpProvider(email).future),
                   child: const Text('Resend OTP', style: TextStyle(color: Colors.orange)),
                 ),
                 loading: () => const CircularProgressIndicator(),
