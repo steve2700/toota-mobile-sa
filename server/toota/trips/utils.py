@@ -9,26 +9,25 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=
     Find a list of available drivers near the given pickup location.
     Uses geopy to calculate real distances.
     """
-    available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)  # Get available drivers
+    available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)
     drivers_list = []
     pickup_location = (float(pickup_lat), float(pickup_lon))
 
     for driver in available_drivers:
         driver_location = (driver.latitude, driver.longitude)
         distance = geodesic(pickup_location, driver_location).km  # Calculate distance in KM
-        
+
         if distance <= radius:  # Only include drivers within the radius
             drivers_list.append({
-                "driver":FindDriversSerializer(driver).data,
+                "driver": FindDriversSerializer(driver).data,
                 "distance": round(distance, 2)
             })
-
 
     # Sort drivers by nearest distance and limit results
     drivers_list = sorted(drivers_list, key=lambda x: x["distance"])[:limit]
     if not drivers_list:
         return available_drivers
-    
+
     return drivers_list
 
 
@@ -36,7 +35,7 @@ def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
     """
     Call OSRM's public API to calculate route data between two coordinates.
     Example endpoint: http://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false
-    Returns a dict with 'distance' (in km) and 'duration' (in minutes) if successful.
+    Returns a dict with 'distance_km' (in km) and 'duration_min' (in minutes) if successful.
     """
     url = f"http://router.project-osrm.org/route/v1/driving/{pickup_lon},{pickup_lat};{dest_lon},{dest_lat}?overview=false"
     try:

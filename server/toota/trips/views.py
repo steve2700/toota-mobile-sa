@@ -11,8 +11,7 @@ from .serializers import (
     TripDescriptionSerializer,
     UpdateTripStatusSerializer
 )
-from .utils import find_nearest_drivers, get_route_data 
-
+from .utils import find_nearest_drivers, get_route_data
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class FindDriversView(APIView):
     """
     API View to fetch the nearest available drivers.
     """
-    permission_classes = [IsAuthenticated]  # make sure the user is authenticated
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Find nearest available drivers.",
@@ -29,9 +28,6 @@ class FindDriversView(APIView):
         responses={200: "List of nearest drivers.", 400: "Invalid input data."}
     )
     def post(self, request):
-        """
-        Handles POST request to fetch available drivers near the pickup location.
-        """
         logger.info("Finding nearest available drivers.")
         serializer = TripDescriptionSerializer(data=request.data)
 
@@ -52,12 +48,11 @@ class FindDriversView(APIView):
                         status=status.HTTP_200_OK)
 
 
-
 class UpdateTripStatusView(APIView):
     """
     API View to update the status of an existing trip.
     """
-    # permission_classes = [IsAuthenticated] # make sure the user is authenticated
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Update trip status (e.g., pending -> accepted -> in_progress -> completed).",
@@ -65,9 +60,6 @@ class UpdateTripStatusView(APIView):
         responses={200: "Trip status updated.", 400: "Invalid data."}
     )
     def post(self, request):
-        """
-        Handles trip status updates.
-        """
         serializer = UpdateTripStatusSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({"error": "Invalid input data", "details": serializer.errors},
@@ -102,7 +94,7 @@ class CalculateFareView(APIView):
         serializer = TripDescriptionSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
-            
+
             # Extract coordinates and other parameters
             pickup_lat = data.get('pickup_lat')
             pickup_lon = data.get('pickup_lon')
@@ -111,16 +103,20 @@ class CalculateFareView(APIView):
             surge = data.get('surge', False)
             vehicle_types = data.get('vehicle_type')
             vehicle_type = vehicle_types[0] if vehicle_types else None
-            
+
             # Call the OSRM API to get the real distance and time estimates
             route_data = get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon)
             distance_km = route_data["distance_km"]
             estimated_time_minutes = route_data["duration_min"]
-            
-            # Create a temporary Trip instance (or use a service method) to calculate fare
-            trip = Trip(vehicle_type=vehicle_type, pickup=f\"{pickup_lat},{pickup_lon}\", destination=f\"{dest_lat},{dest_lon}\")
+
+            # Create a temporary Trip instance (without saving) to calculate fare
+            trip = Trip(
+                vehicle_type=vehicle_type,
+                pickup=f'{pickup_lat},{pickup_lon}',
+                destination=f'{dest_lat},{dest_lon}'
+            )
             estimated_fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
-            
+
             return Response({
                 'estimated_fare': estimated_fare,
                 'distance_km': distance_km,
