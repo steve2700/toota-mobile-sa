@@ -1,28 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+import 'package:toota_mobile_sa/providers/login_provider.dart';
 import 'package:toota_mobile_sa/constants.dart';
-
-final dioProvider = Provider((ref) => Dio());
-
-/// Login API Provider
-final loginProvider = FutureProvider.family<bool, Map<String, String>>((ref, credentials) async {
-  final dio = ref.read(dioProvider);
-  try {
-    final response = await dio.post(
-      'https://toota-mobile-sa.onrender.com/swagger/login/user',
-      data: {'email': credentials['email'], 'password': credentials['password']},
-    );
-
-    if (response.statusCode == 200) {
-      return true; // Login successful
-    } else {
-      throw Exception('Invalid Email or password');
-    }
-  } catch (e) {
-    throw Exception('Login failed: $e');
-  }
-});
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -46,11 +25,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    final login = ref.read(loginProvider({'email': email, 'password': password}).future);
+    final loginFuture = ref.read(loginProvider({'email': email, 'password': password}).future);
     try {
-      bool isSuccess = await login;
+      bool isSuccess = await loginFuture;
       if (isSuccess) {
-        Navigator.pushReplacementNamed(context, RouteNames.role); // Navigate to dashboard on success
+        Navigator.pushReplacementNamed(context, RouteNames.dashboard);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid credentials, please try again')),
@@ -94,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 32),
             TextField(
               controller: _emailController,
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: 'Email',
                 prefixIcon: const Icon(Icons.email, color: Colors.orange),
