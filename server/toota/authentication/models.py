@@ -99,6 +99,7 @@ class Driver(AbstractCustomUser):
     license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     license_expiry = models.DateField(null=True, blank=True)
     VEHICLE_CHOICES = [
+        ('MotorBike', 'MotorBike'),
         ('1 ton Truck', '1 ton Truck'),
         ('1.5 ton Truck', '1.5 ton Truck'),
         ('2 ton Truck', '2 ton Truck'),

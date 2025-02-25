@@ -15,10 +15,10 @@ ALLOWED_HOSTS = [
     'localhost'
 ]  
 
-AUTH_USER_MODEL = 'authentication.User'
 
 INSTALLED_APPS = [
     'daphne',
+    "authentication",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_yasg",
     "rest_framework",
-    "authentication",
     "trips",
     "corsheaders",
     "cloudinary_storage",
@@ -39,6 +38,7 @@ INSTALLED_APPS = [
     ##"django_extension",
 
 ]
+AUTH_USER_MODEL = 'authentication.User'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware should be at the top
