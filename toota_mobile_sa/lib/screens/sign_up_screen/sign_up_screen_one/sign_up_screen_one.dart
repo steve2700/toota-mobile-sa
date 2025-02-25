@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import '../../../providers/otp_provider.dart'; // Import the provider
+ // Import the provider
 
 class SignUpScreenOne extends ConsumerStatefulWidget {
   const SignUpScreenOne({Key? key}) : super(key: key);
@@ -13,7 +13,7 @@ class SignUpScreenOne extends ConsumerStatefulWidget {
 class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
   final TextEditingController _otpController = TextEditingController();
   final String email = "The verification code has been sent to your email"; // Replace with actual phone number
-
+  bool _isResending = false;
   Future<void> _verifyOtp() async {
     String otp = _otpController.text.trim();
     if (otp.length != 4) {
@@ -48,11 +48,40 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
       );
     }
   }
+  Future<void> _resendOtp() async {
+    setState(() {
+      _isResending = true;
+    });
+
+    try {
+      final response = await Dio().post(
+        'https://toota-mobile-sa.onrender.com/swagger/resend-code/',
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP resent successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to resend OTP, try again')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error resending OTP: $e')),
+      );
+    }
+
+    setState(() {
+      _isResending = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final resendOtpState = ref.watch(resendOtpProvider(email));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -122,16 +151,13 @@ class _SignUpScreenOneState extends ConsumerState<SignUpScreenOne> {
             ),
             const SizedBox(height: 16),
             Center(
-              child: resendOtpState.when(
-                data: (_) => TextButton(
-                  onPressed: () => ref.read(resendOtpProvider(email).future),
-                  child: const Text('Resend OTP', style: TextStyle(color: Colors.orange)),
-                ),
-                loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
-              ),
+             child: TextButton(
+                onPressed: _isResending ? null : _resendOtp, // Disable when resending
+                child: _isResending
+                    ? const CircularProgressIndicator() // Show loader
+                    : const Text('Resend OTP', style: TextStyle(color: Colors.orange)),
             ),
-          ],
+    )          ],
         ),
       ),
     );
