@@ -39,6 +39,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     setState(() => isLoading = false);
 
     if (response["success"] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign up successful. Please verify your email')),
+      );
       Navigator.pushNamed(context, '/otp');
       // Navigate to next screen if needed
     } else {
@@ -76,6 +79,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
+              
               'Sign up to experience convenient transportation at your fingertips.',
               style: TextStyle(fontSize: 16, color: Colors.black54),
               textAlign: TextAlign.center,
@@ -153,7 +157,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              // ignore: use_function_type_syntax_for_parameters
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
               child: const Text('I already have an account'),
             )
           ],
