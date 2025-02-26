@@ -108,6 +108,7 @@ class CalculateFareView(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
+        # This block should be indented properly
         serializer = TripDescriptionSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
@@ -123,21 +124,27 @@ class CalculateFareView(APIView):
             # Get real route data
             route_data = get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon)
             distance_km = route_data["distance_km"]
-            estimated_time_minutes = float(route_data["duration_min"]) #now its x min or x seconds
-                                                                        
+            estimated_time_str = route_data["duration"]
+
+            if "min" in estimated_time_str:
+                estimated_time_minutes = float(estimated_time_str.replace(" min", ""))
+            elif "sec" in estimated_time_str:
+                estimated_time_minutes = float(estimated_time_str.replace(" sec", "")) / 60
+            else:
+                estimated_time_minutes = 0.0
 
             trip = Trip(
                 vehicle_type=vehicle_type,
                 pickup=f'{pickup_lat},{pickup_lon}',
                 destination=f'{dest_lat},{dest_lon}'
             )
-            estimated_fare = trip.calculate_fare(distance_km, estimated_time, surge)
+            estimated_fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
 
             return Response({
                 'estimated_fare': estimated_fare,
                 'distance_km': distance_km,
-                'estimated_time': estimated_time  # Now it's in readable format
+                'estimated_time': estimated_time_str
             }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
