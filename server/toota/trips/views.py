@@ -100,7 +100,7 @@ class CalculateFareView(APIView):
                     'application/json': {
                         'estimated_fare': 250.0,
                         'distance_km': 15.2,
-                        'estimated_time_minutes': 25
+                        'estimated_time': "25 min"
                     }
                 }
             ),
@@ -112,7 +112,6 @@ class CalculateFareView(APIView):
         if serializer.is_valid():
             data = serializer.validated_data
 
-            # Extract coordinates and other parameters
             pickup_lat = data.get('pickup_lat')
             pickup_lon = data.get('pickup_lon')
             dest_lat = data.get('dest_lat')
@@ -121,23 +120,24 @@ class CalculateFareView(APIView):
             vehicle_types = data.get('vehicle_type')
             vehicle_type = vehicle_types[0] if vehicle_types else None
 
-            # Call the OSRM API to get the real distance and time estimates
+            # Get real route data
             route_data = get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon)
             distance_km = route_data["distance_km"]
-            estimated_time_minutes = route_data["duration_min"]
+            estimated_time_minutes = float(route_data["duration_min"]) #now its x min or x seconds
+                                                                        
 
-            # Create a temporary Trip instance (without saving) to calculate fare
             trip = Trip(
                 vehicle_type=vehicle_type,
                 pickup=f'{pickup_lat},{pickup_lon}',
                 destination=f'{dest_lat},{dest_lon}'
             )
-            estimated_fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
+            estimated_fare = trip.calculate_fare(distance_km, estimated_time, surge)
 
             return Response({
                 'estimated_fare': estimated_fare,
                 'distance_km': distance_km,
-                'estimated_time_minutes': estimated_time_minutes
+                'estimated_time': estimated_time  # Now it's in readable format
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 

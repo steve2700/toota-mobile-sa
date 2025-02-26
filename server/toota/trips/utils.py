@@ -34,8 +34,7 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=
 def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
     """
     Call OSRM's public API to calculate route data between two coordinates.
-    Example endpoint: http://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false
-    Returns a dict with 'distance_km' (in km) and 'duration_min' (in minutes) if successful.
+    Returns a dict with 'distance_km' (rounded to 2 decimals) and 'duration' (in minutes or seconds).
     """
     url = f"http://router.project-osrm.org/route/v1/driving/{pickup_lon},{pickup_lat};{dest_lon},{dest_lat}?overview=false"
     try:
@@ -43,12 +42,19 @@ def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
         data = response.json()
         if data.get("code") == "Ok":
             route = data["routes"][0]
-            # OSRM returns distance in meters and duration in seconds
-            distance_km = route["distance"] / 1000.0
-            duration_min = route["duration"] / 60.0
-            return {"distance_km": distance_km, "duration_min": duration_min}
+            distance_km = float(route["distance"]) / 1000.0 #round to 2 decimal place
+            duration_min = float(route["duration"]) / 60.0  
+                                                      
+
+            # Convert duration to minutes, but keep short trips in seconds
+            if duration_sec < 60:
+                duration_str = f"{int(duration_sec)} sec"
+            else:
+                duration_str = f"{round(duration_sec / 60)} min"
+
+            return {"distance_km": distance_km, "duration": duration_str}
     except Exception as e:
         print(f"Error calling OSRM API: {e}")
-    # Return defaults if the API fails
-    return {"distance_km": 0.0, "duration_min": 0.0}
+
+    return {"distance_km": 0.0, "duration": "0 min"}
 
