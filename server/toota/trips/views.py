@@ -93,22 +93,9 @@ class CalculateFareView(APIView):
     @swagger_auto_schema(
         operation_description="Calculate the fare for a trip based on vehicle type, distance, and time.",
         request_body=TripDescriptionSerializer,
-        responses={
-            200: openapi.Response(
-                description="Fare calculated successfully.",
-                examples={
-                    'application/json': {
-                        'estimated_fare': 250.0,
-                        'distance_km': 15.2,
-                        'estimated_time': "25 min"
-                    }
-                }
-            ),
-            400: "Invalid input data."
-        }
+        responses={200: openapi.Response(description="Fare calculated successfully.")}
     )
     def post(self, request, *args, **kwargs):
-        # This block should be indented properly
         serializer = TripDescriptionSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
@@ -126,12 +113,31 @@ class CalculateFareView(APIView):
             distance_km = route_data["distance_km"]
             estimated_time_str = route_data["duration"]
 
-            if "min" in estimated_time_str:
+            # Parse the estimated time to convert it into minutes (or other units if required)
+            estimated_time_minutes = 0.0
+            if "hour" in estimated_time_str:
+                # Handle case where hours are present (e.g., "1 hour 10 min")
+                hours = 0
+                minutes = 0
+                seconds = 0
+
+                # Extract hours, minutes, and seconds if present
+                parts = estimated_time_str.split(' ')
+                for i in range(len(parts)):
+                    if 'hour' in parts[i]:
+                        hours = int(parts[i-1])  # The number before 'hour' is the number of hours
+                    elif 'min' in parts[i]:
+                        minutes = int(parts[i-1])  # The number before 'min' is the number of minutes
+                    elif 'sec' in parts[i]:
+                        seconds = int(parts[i-1])  # The number before 'sec' is the number of seconds
+
+                estimated_time_minutes = hours * 60 + minutes + seconds / 60
+            elif "min" in estimated_time_str:
+                # Handle case where only minutes are present (e.g., "40 min")
                 estimated_time_minutes = float(estimated_time_str.replace(" min", ""))
             elif "sec" in estimated_time_str:
+                # Handle case where only seconds are present (e.g., "30 sec")
                 estimated_time_minutes = float(estimated_time_str.replace(" sec", "")) / 60
-            else:
-                estimated_time_minutes = 0.0
 
             trip = Trip(
                 vehicle_type=vehicle_type,
@@ -143,7 +149,7 @@ class CalculateFareView(APIView):
             return Response({
                 'estimated_fare': estimated_fare,
                 'distance_km': distance_km,
-                'estimated_time': estimated_time_str
+                'estimated_time': estimated_time_str  # Now it's in readable format
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -41,7 +41,7 @@ def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
     try:
         response = requests.get(url)
         data = response.json()
-        
+
         if data.get("code") == "Ok" and "routes" in data and len(data["routes"]) > 0:
             route = data["routes"][0]
 
@@ -51,11 +51,18 @@ def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
             # Format duration to be human-readable
             if duration_sec < 60:
                 duration_str = f"{int(duration_sec)} sec"
+            elif duration_sec < 3600:
+                duration_str = f"{int(duration_sec // 60)} min"
             else:
-                duration_str = f"{round(duration_sec / 60)} min"
+                hours = int(duration_sec // 3600)
+                minutes = int((duration_sec % 3600) // 60)
+                seconds = int(duration_sec % 60)
+                duration_str = f"{hours} hour{'s' if hours > 1 else ''} {minutes} min"
+                if seconds > 0:
+                    duration_str += f" {seconds} sec"
 
             return {"distance_km": distance_km, "duration": duration_str}
-    
+
     except Exception as e:
         print(f"Error calling OSRM API: {e}")
 
