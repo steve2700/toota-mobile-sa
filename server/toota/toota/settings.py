@@ -115,8 +115,8 @@ SIMPLE_JWT = {
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=config('DATABASE_URL'),
-        conn_max_age=600,
+        default=config('DATABASE_URL'),  # Load DATABASE_URL from .env
+        conn_max_age=0,  # Ensure connections close immediately after use
         ssl_require=True
     )
 }

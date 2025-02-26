@@ -90,6 +90,23 @@ class CalculateFareView(APIView):
     Expected payload includes pickup and destination coordinates,
     vehicle_type, and an optional surge flag.
     """
+    @swagger_auto_schema(
+        operation_description="Calculate the fare for a trip based on vehicle type, distance, and time.",
+        request_body=TripDescriptionSerializer,
+        responses={
+            200: openapi.Response(
+                description="Fare calculated successfully.",
+                examples={
+                    'application/json': {
+                        'estimated_fare': 250.0,
+                        'distance_km': 15.2,
+                        'estimated_time_minutes': 25
+                    }
+                }
+            ),
+            400: "Invalid input data."
+        }
+    )
     def post(self, request, *args, **kwargs):
         serializer = TripDescriptionSerializer(data=request.data)
         if serializer.is_valid():
