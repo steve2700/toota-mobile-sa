@@ -21,12 +21,26 @@
         .message-template { margin-top: 15px; }
         .message-template button { margin-right: 5px; background-color: #2980b9; }
         hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
+        .auth-section { margin-bottom: 20px; padding: 15px; background-color: #f1f9f1; border-radius: 5px; border: 1px solid #ddd; }
+        .auth-title { margin-top: 0; font-size: 18px; color: #333; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Toota WebSocket Tester - South Africa</h1>
         <p>Test WebSocket connections for Toota's transport and logistics system in South Africa</p>
+    </div>
+    
+    <div class="auth-section">
+        <h3 class="auth-title">Authentication</h3>
+        <div class="param-input">
+            <label for="driverToken">Driver Token:</label>
+            <input type="text" id="driverToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImRyaXZlciJ9.exampleDriverToken" style="width: 500px;">
+        </div>
+        <div class="param-input">
+            <label for="userToken">User Token:</label>
+            <input type="text" id="userToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InVzZXIifQ.exampleUserToken" style="width: 500px;">
+        </div>
     </div>
     
     <div class="container">
@@ -168,14 +182,36 @@
                 return url + driverId + '/';
             };
             
+            // Get appropriate token based on client type
+            const getToken = () => {
+                // Driver-related sockets use driver token, user-related use user token
+                if (type.includes('driver')) {
+                    return document.getElementById('driverToken').value;
+                } else {
+                    return document.getElementById('userToken').value;
+                }
+            };
+            
             connectBtn.addEventListener('click', () => {
                 try {
                     const fullUrl = getFullUrl();
+                    const token = getToken();
+                    
+                    // Create WebSocket with authentication
                     window[`${type}Socket`] = new WebSocket(fullUrl);
                     
                     addMessage(messagesDiv, `Connecting to ${fullUrl}...`, "system");
                     
                     window[`${type}Socket`].onopen = () => {
+                        // Send authentication message immediately after connection
+                        const authMessage = {
+                            type: "authentication",
+                            token: token
+                        };
+                        
+                        window[`${type}Socket`].send(JSON.stringify(authMessage));
+                        addMessage(messagesDiv, "Sent authentication token", "system");
+                        
                         statusSpan.textContent = "(Connected)";
                         statusSpan.className = "connected";
                         connectBtn.disabled = true;
@@ -187,13 +223,25 @@
                         enableTemplateButtons(type);
                     };
                     
-                    window[`${type}Socket`].onclose = () => {
+                    window[`${type}Socket`].onclose = (event) => {
                         statusSpan.textContent = "(Disconnected)";
                         statusSpan.className = "disconnected";
                         connectBtn.disabled = false;
                         disconnectBtn.disabled = true;
                         sendBtn.disabled = true;
-                        addMessage(messagesDiv, "Disconnected from server", "system");
+                        
+                        let reason = "";
+                        if (event.code === 1000) {
+                            reason = "Normal closure";
+                        } else if (event.code === 1003) {
+                            reason = "Invalid data";
+                        } else if (event.code === 1008) {
+                            reason = "Policy violation (possibly authentication failed)";
+                        } else if (event.code === 1011) {
+                            reason = "Internal server error";
+                        }
+                        
+                        addMessage(messagesDiv, `Disconnected from server. Code: ${event.code} ${reason ? '- ' + reason : ''}`, "system");
                         
                         // Disable template buttons
                         disableTemplateButtons(type);
@@ -209,6 +257,15 @@
                             const parsedData = JSON.parse(event.data);
                             const formattedData = JSON.stringify(parsedData, null, 2);
                             addMessage(messagesDiv, formattedData, "received");
+                            
+                            // Check for authentication response
+                            if (parsedData.type === "authentication_response") {
+                                if (parsedData.status === "success") {
+                                    addMessage(messagesDiv, "✅ Authentication successful", "system");
+                                } else {
+                                    addMessage(messagesDiv, "❌ Authentication failed: " + parsedData.message, "error");
+                                }
+                            }
                         } catch (e) {
                             // If not JSON, display as is
                             addMessage(messagesDiv, event.data, "received");
