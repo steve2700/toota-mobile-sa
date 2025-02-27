@@ -73,6 +73,7 @@ class BaseLoginView(APIView):
     Expects a serializer_class attribute that validates and returns a user.
     """
     serializer_class = None
+    permission_classes = []  # Allow unauthenticated access
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
