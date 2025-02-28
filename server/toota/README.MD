@@ -192,7 +192,6 @@ GET /trip/find-driver/
    "message": "No available drivers nearby"
 }
 ```
-
 ## Real-Time Trip Requests
 To provide instant trip requests to drivers, a WebSocket connection is used. When a passenger requests a ride, the system sends a real-time trip request to nearby drivers.
 

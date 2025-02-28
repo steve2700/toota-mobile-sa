@@ -43,5 +43,51 @@ class Trip(models.Model):
     def __str__(self):
         return f"{self.pickup} to {self.destination} and status is {self.status}"
 
+import uuid
+from django.db import models
+from django.contrib.auth import get_user_model
 
-# Create your models here.
+User = get_user_model()  # Get the user model dynamically
+
+class Payment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+    
+    PAYMENT_METHODS = [
+        ('card', 'Card'),
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cash', 'Cash'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payments")  # Link to User
+    trip_id = models.UUIDField()  # Reference to Trip
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Ensure precision
+    currency = models.CharField(max_length=3, default="NGN")  # Default to NGN
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    transaction_id = models.CharField(max_length=100, unique=True, blank=True, null=True)  # Flutterwave transaction ID
+    payment_reference = models.CharField(max_length=100, blank=True, null=True)  # Any additional payment ref
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')  # Track payment status
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto timestamp when created
+    updated_at = models.DateTimeField(auto_now=True)  # Auto update when modified
+
+    class Meta:
+        ordering = ['-created_at']  # Show latest payments first
+        indexes = [
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['trip_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.amount} {self.currency} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        """Ensure transaction_id is generated before saving."""
+        if not self.transaction_id:
+            self.transaction_id = str(uuid.uuid4())  # Generate unique transaction ID
+        super().save(*args, **kwargs)
+

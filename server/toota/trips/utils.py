@@ -1,5 +1,12 @@
 from authentication.models import Driver
 from geopy.distance import geodesic  # For calculating distances
+import base64
+import json
+from Crypto.Cipher import AES
+from django.conf import settings
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=20):
     from .serializers import FindDriversSerializer
@@ -28,3 +35,24 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, radius=50, limit=
         return available_drivers
     
     return drivers_list
+
+
+def encrypt_card_details(card_details):
+    """Encrypts card details using AES encryption required by Flutterwave"""
+    key = os.getenv("FLUTTERWAVE_ENCRYPTION_KEY")
+    key_bytes = base64.b64decode(key)
+    
+    # Convert card details to JSON and encode
+    data_string = json.dumps(card_details)
+    block_size = AES.block_size
+    padding = block_size - (len(data_string) % block_size)
+    data_string += chr(padding) * padding
+    
+    # Encrypt using AES
+    cipher = AES.new(key_bytes, AES.MODE_ECB)
+    encrypted_bytes = cipher.encrypt(data_string.encode("utf-8"))
+    
+    # Encode the encrypted data in base64
+    encrypted_data = base64.b64encode(encrypted_bytes).decode("utf-8")
+    
+    return encrypted_data

@@ -89,3 +89,37 @@ class UpdateTripStatusView(APIView):
         trip.status = new_status
         trip.save()
         return Response({"message": "Trip status updated successfully."}, status=status.HTTP_200_OK)
+
+class PaymentView(APIView):
+    """
+    API View to handle trip payments.
+    """
+    # permission_classes = [IsAuthenticated] # make sure the user is authenticated
+
+    @swagger_auto_schema(
+        operation_description="Handle trip payments.",
+        request_body=UpdateTripStatusSerializer,
+        responses={200: "Payment processed.", 400: "Invalid data."}
+    )
+    def post(self, request):
+        """
+        Handles trip payments.
+        """
+        serializer = UpdateTripStatusSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": "Invalid input data", "details": serializer.errors},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        trip_id = serializer.validated_data["trip_id"]
+        new_status = serializer.validated_data["status"]
+
+        try:
+            trip = Trip.objects.get(id=trip_id)
+        except Trip.DoesNotExist:
+            return Response({"error": "Trip not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status == "completed":
+            trip.status = new_status
+            trip.save()
+            return Response({"message": "Payment processed successfully."}, status=status.HTTP_200_OK)
+        return Response({"error": "Invalid status for payment"}, status=status.HTTP_400_BAD_REQUEST)
