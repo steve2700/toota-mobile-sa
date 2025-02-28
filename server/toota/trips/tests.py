@@ -1,12 +1,4 @@
 import json
-from rest_framework.test import APIClient
-from django.test import TestCase
-from django.urls import reverse
-from unittest.mock import patch, MagicMock
-from channels.testing import WebsocketCommunicator
-from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async
-import json
 import uuid
 from unittest.mock import patch
 import pytest

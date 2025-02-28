@@ -9,17 +9,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load sensitive information from .env
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
+<<<<<<< HEAD
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
+=======
+>>>>>>> origin/pricing-algorithm
 
 ALLOWED_HOSTS = [
     'toota-mobile-sa.onrender.com',
     '127.0.0.1',
     'localhost'
+<<<<<<< HEAD
 ]  
 
 AUTH_USER_MODEL = 'authentication.User'
 AUTH_DRIVER_MODEL = 'authentication.Driver'
+=======
+>>>>>>> origin/pricing-algorithm
 ]
 
 INSTALLED_APPS = [
@@ -74,17 +80,34 @@ TEMPLATES = [
     },
 ]
 
+<<<<<<< HEAD
 WSGI_APPLICATION = "toota.wsgi.application"
 
 # Email settings for Gmail with App Password loaded from .env
+=======
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+WSGI_APPLICATION = 'toota.wsgi.application'
+ASGI_APPLICATION = 'toota.asgi.application'
+
+# Email settings
+>>>>>>> origin/pricing-algorithm
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587  # Use 465 for SSL, 587 for TLS
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+<<<<<<< HEAD
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -107,6 +130,8 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+=======
+>>>>>>> origin/pricing-algorithm
 # JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -115,7 +140,10 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
+<<<<<<< HEAD
     'SIGNING_KEY': SECRET_KEY,
+=======
+>>>>>>> origin/pricing-algorithm
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
@@ -139,6 +167,7 @@ DATABASES = {
     )
 }
 
+<<<<<<< HEAD
 DIRECT_URL = config('DIRECT_URL')
 
 SWAGGER_SETTINGS = {
@@ -151,6 +180,18 @@ SWAGGER_SETTINGS = {
     },
 }
 
+=======
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+        },
+    },
+}
+
+>>>>>>> origin/pricing-algorithm
 DIRECT_URL = config('DIRECT_URL')
 
 # Password validation
@@ -178,8 +219,14 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+<<<<<<< HEAD
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+=======
+STATIC_URL = '/static/'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+>>>>>>> origin/pricing-algorithm
 
 cloudinary.config(
     cloud_name = config('CLOUDINARY_CLOUD_NAME'),
@@ -194,13 +241,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
+<<<<<<< HEAD
     "https://toota-mobile-sa.onrender.com",
     "http://127.0.0.1:8000",
+=======
+    'https://toota-mobile-sa.onrender.com',
+    'http://127.0.0.1:8000',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+>>>>>>> origin/pricing-algorithm
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+<<<<<<< HEAD
 CSRF_TRUSTED_ORIGINS = [
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
@@ -216,6 +274,8 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
 }
 
+=======
+>>>>>>> origin/pricing-algorithm
 # Logging for debugging
 LOGGING = {
     'version': 1,

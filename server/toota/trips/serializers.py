@@ -1,8 +1,11 @@
 from rest_framework import serializers
 from .models import Trip
 from authentication.models import Driver
+<<<<<<< HEAD
 from django.core.validators import MinValueValidator
 from trips.models import Trip, Payment
+=======
+>>>>>>> origin/pricing-algorithm
 
 
 class TripDescriptionSerializer(serializers.Serializer):
@@ -44,6 +47,7 @@ class UpdateTripStatusSerializer(serializers.Serializer):
     """
     trip_id = serializers.IntegerField(required=True)
     status = serializers.ChoiceField(
+<<<<<<< HEAD
         choices=["pending", "picked up", "in progress", "completed", "cancelled"],
         required=True
     )
@@ -90,3 +94,9 @@ class PaymentSerializer(serializers.ModelSerializer):
         """Generate a unique transaction ID."""
         import uuid
         return str(uuid.uuid4())
+=======
+        choices=["pending", "in_progress", "completed", "cancelled"],
+        required=True
+    )
+
+>>>>>>> origin/pricing-algorithm
