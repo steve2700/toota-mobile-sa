@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 class DriverLocationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        """Connect driver to WebSocket for location updates and trip notifications."""
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
         self.room_group_name = f"driver_{self.driver_id}"
         logger.info(f"Driver connect attempt: {self.driver_id}, User: {self.scope['user']}")
@@ -26,12 +25,10 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             await self.close(code=4403)
 
     async def disconnect(self, close_code):
-        """Remove driver from group when disconnected."""
         if hasattr(self, 'room_group_name'):
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
-        """Handle driver location updates and trip responses."""
         try:
             data = json.loads(text_data)
             if "latitude" in data and "longitude" in data:
@@ -117,7 +114,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({"error": "Internal server error"}))
 
     async def driver_location_update(self, event):
-        """Send updated location to all connected clients."""
         await self.send(
             text_data=json.dumps(
                 {
@@ -129,7 +125,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         )
 
     async def trip_request_notification(self, event):
-        """Send trip request notification to driver."""
         await self.send(
             text_data=json.dumps({
                 "type": "new_trip_request",
@@ -138,7 +133,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         )
 
     async def trip_status_update(self, event):
-        """Send trip status updates to driver."""
         await self.send(
             text_data=json.dumps(event["data"])
         )
@@ -364,6 +358,8 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                         "driver_info": driver_details
                     }))
                     
+                    user_details = await database_sync_to_async(self.get_user_details)(trip.user)
+                    
                     await self.channel_layer.group_send(
                         f"driver_{selected_driver_id}",
                         {
@@ -377,7 +373,7 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                                 "destination": trip.destination,
                                 "vehicle_type": trip.vehicle_type,
                                 "load_description": trip.load_description,
-                                "user_info": await self.get_user_details(trip.user)
+                                "user_info": user_details
                             }
                         }
                     )
@@ -387,12 +383,15 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                     if trip.status == "pending":
                         trip.driver = None
                         await self.save_trip(trip)
+                        available_drivers = await self.get_available_drivers(trip)
                         await self.send(text_data=json.dumps({
                             "message": "Driver did not respond - select another driver",
                             "trip_id": str(trip.id),
                             "status": "pending",
-                            "available_drivers": await self.get_available_drivers(trip)
+                            "available_drivers": available_drivers
                         }))
+                else:
+                    await self.send(text_data=json.dumps({"error": "Invalid trip or driver"}))
             else:
                 logger.warning(f"Unknown action: {action}")
         except json.JSONDecodeError as e:
