@@ -1,22 +1,29 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
 
-# User Manager
-class UserManager(BaseUserManager):
-    """Custom user manager for clients."""
-
-    def create_user(self, email, password=None, **extra_fields):
+###############################################################################
+# Base Manager: Shared logic for creating users
+###############################################################################
+class BaseCustomUserManager(BaseUserManager):
+    """
+    Base manager for custom user models. It centralizes user creation logic,
+    ensuring email normalization, password setting, and common validations.
+    """
+    def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError(_("The Email field must be set"))
         email = self.normalize_email(email)
-        extra_fields.setdefault('is_active', False)  # User must verify email
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
+
+    def create_user(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_active', False)  # Require verification by default
+        return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
@@ -27,18 +34,21 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
 
-        return self.create_user(email, password, **extra_fields)
+        return self._create_user(email, password, **extra_fields)
 
-# Client User Model
-class User(AbstractBaseUser):
-    """Custom user model for clients."""
+###############################################################################
+# Abstract Base Model: Common fields for all user types
+###############################################################################
+class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
+    """
+    Abstract user model that holds fields and methods common to both clients and drivers.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
-    physical_address = models.TextField(blank=True, null=True)
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
-    is_active = models.BooleanField(default=False)  # Email verification required
+    is_active = models.BooleanField(default=False)  # Requires verification
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,25 +57,24 @@ class User(AbstractBaseUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    objects = UserManager()
+    class Meta:
+        abstract = True
+
+###############################################################################
+# Client User Model
+###############################################################################
+class ClientUser(AbstractCustomUser):
+    """
+    Client user model that extends the abstract custom user with client-specific fields.
+    """
+    physical_address = models.TextField(blank=True, null=True)
+
+    objects = BaseCustomUserManager()
 
     def __str__(self):
         return self.email
 
-# Driver Manager
-class DriverManager(BaseUserManager):
-    """Custom user manager for drivers."""
-
-    def create_driver(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError(_("The Email field must be set"))
-        email = self.normalize_email(email)
-        extra_fields.setdefault('is_active', False)  # Driver must be verified
-        driver = self.model(email=email, **extra_fields)
-        driver.set_password(password)
-        driver.save(using=self._db)
-        return driver
-
+###############################################################################
 # Driver Model
 class Driver(AbstractBaseUser):
     """Custom user model for drivers."""
@@ -91,8 +100,6 @@ class Driver(AbstractBaseUser):
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
     # number_plate = models.CharField(max_length=50, unique=True)  # Ensuring it's unique
     profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
-    is_active = models.BooleanField(default=False)  # Must be vetted
-    is_staff = models.BooleanField(default=False)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_trips_completed = models.PositiveIntegerField(default=0)
@@ -103,18 +110,19 @@ class Driver(AbstractBaseUser):
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-
-    objects = DriverManager()
+    objects = BaseCustomUserManager()
 
     def __str__(self):
         return f"{self.email} - {self.vehicle_type}"
 
-# OTP Model
+###############################################################################
+# OTP Model: For handling email verification
+###############################################################################
 class OTP(models.Model):
-    """Model to handle email verification via OTP."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp')
+    """
+    Model to handle email verification via a 4-digit OTP code.
+    """
+    user = models.OneToOneField(ClientUser, on_delete=models.CASCADE, related_name='otp')
     code = models.CharField(max_length=4)  # 4-digit OTP code
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
@@ -123,7 +131,9 @@ class OTP(models.Model):
         return f"OTP for {self.user.email}"
 
     def is_expired(self):
-        """Check if the OTP is expired (e.g., after 1 hour)."""
+        """
+        Checks if the OTP has expired (e.g., after 1 hour).
+        """
         expiration_time = timezone.now() - timezone.timedelta(hours=1)
         return self.created_at < expiration_time
 
