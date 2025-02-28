@@ -358,7 +358,7 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                         "driver_info": driver_details
                     }))
                     
-                    user_details = await database_sync_to_async(self.get_user_details)(trip.user)
+                    user_details = await self.get_user_details(trip.user)
                     
                     await self.channel_layer.group_send(
                         f"driver_{selected_driver_id}",
