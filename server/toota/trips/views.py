@@ -11,7 +11,7 @@ from .serializers import (
     TripDescriptionSerializer,
     UpdateTripStatusSerializer
 )
-from .utils import find_nearest_drivers  # Function to fetch nearest drivers
+from .utils import find_nearest_drivers, get_route_data  
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,77 @@ class UpdateTripStatusView(APIView):
         trip.status = new_status
         trip.save()
         return Response({"message": "Trip status updated successfully."}, status=status.HTTP_200_OK)
+
+
+class CalculateFareView(APIView):
+    """
+    POST endpoint to calculate and return an estimated fare for a trip.
+    Expected payload includes pickup and destination coordinates,
+    vehicle_type, and an optional surge flag.
+    """
+    @swagger_auto_schema(
+        operation_description="Calculate the fare for a trip based on vehicle type, distance, and time.",
+        request_body=TripDescriptionSerializer,
+        responses={200: openapi.Response(description="Fare calculated successfully.")}
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = TripDescriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+
+            pickup_lat = data.get('pickup_lat')
+            pickup_lon = data.get('pickup_lon')
+            dest_lat = data.get('dest_lat')
+            dest_lon = data.get('dest_lon')
+            surge = data.get('surge', False)
+            vehicle_types = data.get('vehicle_type')
+            vehicle_type = vehicle_types[0] if vehicle_types else None
+
+            # Get real route data
+            route_data = get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon)
+            distance_km = route_data["distance_km"]
+            estimated_time_str = route_data["duration"]
+
+            # Parse the estimated time to convert it into minutes (or other units if required)
+            estimated_time_minutes = 0.0
+            if "hour" in estimated_time_str:
+                # Handle case where hours are present (e.g., "1 hour 10 min")
+                hours = 0
+                minutes = 0
+                seconds = 0
+
+                # Extract hours, minutes, and seconds if present
+                parts = estimated_time_str.split(' ')
+                for i in range(len(parts)):
+                    if 'hour' in parts[i]:
+                        hours = int(parts[i-1])  # The number before 'hour' is the number of hours
+                    elif 'min' in parts[i]:
+                        minutes = int(parts[i-1])  # The number before 'min' is the number of minutes
+                    elif 'sec' in parts[i]:
+                        seconds = int(parts[i-1])  # The number before 'sec' is the number of seconds
+
+                estimated_time_minutes = hours * 60 + minutes + seconds / 60
+            elif "min" in estimated_time_str:
+                # Handle case where only minutes are present (e.g., "40 min")
+                estimated_time_minutes = float(estimated_time_str.replace(" min", ""))
+            elif "sec" in estimated_time_str:
+                # Handle case where only seconds are present (e.g., "30 sec")
+                estimated_time_minutes = float(estimated_time_str.replace(" sec", "")) / 60
+
+            trip = Trip(
+                vehicle_type=vehicle_type,
+                pickup=f'{pickup_lat},{pickup_lon}',
+                destination=f'{dest_lat},{dest_lon}'
+            )
+            estimated_fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
+
+            return Response({
+                'estimated_fare': estimated_fare,
+                'distance_km': distance_km,
+                'estimated_time': estimated_time_str  # Now it's in readable format
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentView(APIView):
     """

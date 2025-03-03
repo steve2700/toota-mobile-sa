@@ -1,11 +1,44 @@
 from django.urls import path
-from .views import SignupView, VerifyEmailView, LoginView, KYCUpdateView,  ResendOTPView
+from .views import (
+    # User endpoints
+    UserSignupView,
+    UserLoginView,
+    UserForgotPasswordView,
+    UserResetPasswordView,
+    ProfileView,
+    KYCUpdateView,
+    
+    # Driver endpoints
+    DriverSignupView,
+    DriverLoginView,
+    DriverForgotPasswordView,
+    DriverResetPasswordView,
+    
+    # Common endpoints for both users and drivers
+    LogoutView,
+    ChangePasswordView,
+    CommonVerifyEmailView,
+    ResendVerificationCodeView,
+)
 
 urlpatterns = [
-    path('signup/user/', SignupView.as_view(), name='signup'),
-    path('verify-email/', VerifyEmailView.as_view(), name='verify_email'),
-    path('login/user/', LoginView.as_view(), name='login'),
-    path('kyc-update/', KYCUpdateView.as_view(), name='kyc_update'),
-    path('resend-otp/', ResendOTPView.as_view(), name='resend-otp'),
-]
+    # User endpoints
+    path('signup/user/', UserSignupView.as_view(), name='signup_user'),
+    path('login/user/', UserLoginView.as_view(), name='login_user'),
+    path('forgot-password/user/', UserForgotPasswordView.as_view(), name='forgot_password_user'),
+    path('reset-password/user/', UserResetPasswordView.as_view(), name='reset_password_user'),
+    path('profile/user/', ProfileView.as_view(), name='profile_user'),
+    path('kyc-update/user/', KYCUpdateView.as_view(), name='kyc_update'),
 
+    # Driver endpoints
+    path('signup/driver/', DriverSignupView.as_view(), name='signup_driver'),
+    path('login/driver/', DriverLoginView.as_view(), name='login_driver'),
+    path('forgot-password/driver/', DriverForgotPasswordView.as_view(), name='forgot_password_driver'),
+    path('reset-password/driver/', DriverResetPasswordView.as_view(), name='reset_password_driver'),
+    
+    # Common endpoints
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('verify-email/', CommonVerifyEmailView.as_view(), name='verify_email'),
+    path('resend-code/', ResendVerificationCodeView.as_view(), name='resend_code'),
+]
