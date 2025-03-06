@@ -8,7 +8,6 @@
             "name": "toota_mobile_sa",
             "request": "launch",
             "type": "dart",
-            "args": ["--no-enable-impeller"]
         },
         {
             "name": "toota_mobile_sa (profile mode)",
