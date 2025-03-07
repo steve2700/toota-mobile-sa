@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework.validators import UniqueValidator
@@ -37,10 +36,7 @@ class BaseSignupSerializer(serializers.ModelSerializer):
             ]
 
     def create(self, validated_data):
-
-
         # Delegate creation to the model's custom manager's create_user method.
-
         return self.Meta.model.objects.create_user(**validated_data)
 
 class BaseLoginSerializer(serializers.Serializer):
@@ -76,11 +72,10 @@ class UserSignupSerializer(BaseSignupSerializer):
         model = User
         fields = BaseSignupSerializer.Meta.fields
 
-
 class UserLoginSerializer(BaseLoginSerializer):
     """
     Serializer for user login.
-    Validates email and password directly against the User model.
+    Validates that the authenticated user is a User instance.
     """
     def validate(self, data):
         email = data.get('email')
@@ -94,20 +89,6 @@ class UserLoginSerializer(BaseLoginSerializer):
         if not user.is_active:
             raise serializers.ValidationError("Account not verified.")
         data['user'] = user
-
-
-
-class UserLoginSerializer(BaseLoginSerializer):
-    """
-    Serializer for  user login.
-    Validates that the authenticated user is a ClientUser instance.
-    """
-    def validate(self, data):
-        data = super().validate(data)
-        user = data.get('user')
-        if not isinstance(user, User):
-            raise serializers.ValidationError("Invalid credentials for a user.")
-
         return data
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -120,7 +101,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ('email', 'first_name', 'last_name', 'physical_address', 'phone_number', 'profile_pic')
         read_only_fields = ('email',)
 
-
 ###############################################################################
 # KYC Update Serializer
 ###############################################################################
@@ -128,24 +108,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class KYCUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer for updating KYC details for a user.
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for retrieving and updating client user profiles.
-    The email field is read-only.
-    """
-    class Meta:
-        model = User
-        fields = ('email', 'first_name', 'last_name', 'physical_address', 'phone_number', 'profile_pic')
-        read_only_fields = ('email',)
-
-###############################################################################
-# KYC Update Serializer
-###############################################################################
-class KYCUpdateSerializer(serializers.ModelSerializer):
-    """
-    Serializer for updating KYC details for a  user.
-
     Validates first name, last name, physical address, phone number, and profile picture.
     """
     phone_number = PhoneNumberField(required=True)
@@ -171,25 +133,18 @@ class KYCUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_phone_number(self, value):
-
         # The PhoneNumberField does its own validation; you can add additional checks if desired.
-
         if len(str(value)) < 10 or len(str(value)) > 15:
             raise serializers.ValidationError("Phone number must be between 10 and 15 digits.")
         return value
 
     def validate_profile_pic(self, value):
-
-        max_size_mb = 2
-        if value.size > max_size_mb * 1024 * 1024:
-            raise serializers.ValidationError(f"Profile picture size must not exceed {max_size_mb} MB.")
-
         # Limit profile picture size to 2 MB and ensure it's JPEG or PNG.
         max_size_mb = 2
         if value.size > max_size_mb * 1024 * 1024:
             raise serializers.ValidationError(f"Profile picture size must not exceed {max_size_mb} MB.")
-        # Optionally, check file extension (this depends on your requirements)
-
+        
+        # Check file extension
         allowed_extensions = ['jpg', 'jpeg', 'png']
         ext = value.name.split('.')[-1].lower()
         if ext not in allowed_extensions:
@@ -207,12 +162,7 @@ class DriverSignupSerializer(BaseSignupSerializer):
     """
     class Meta(BaseSignupSerializer.Meta):
         model = Driver
-
         fields = ('email', 'password')
-
-        fields = ('email', 'password',)
-
-
 
 class DriverLoginSerializer(BaseLoginSerializer):
     """
@@ -245,5 +195,3 @@ class ResendOTPSerializer(serializers.Serializer):
     Only requires the users email.
     """
     email = serializers.EmailField()
-
-
