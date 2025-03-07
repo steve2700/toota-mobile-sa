@@ -16,6 +16,7 @@ ALLOWED_HOSTS = [
     'localhost'
 ]
 
+# Consolidated INSTALLED_APPS list
 INSTALLED_APPS = [
     'daphne',  # For ASGI server
     'channels',  # For WebSocket support
@@ -32,36 +33,13 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'phonenumber_field',
+    'django_extensions',
     'authentication',  # Custom auth app
     'trips',  # Your trips app
-    'toota-mobile-sa.onrender.com',  # Production domain
-    '127.0.0.1'  # Local domain (for testing)
 ]
-
 
 AUTH_USER_MODEL = 'authentication.User'
 AUTH_DRIVER_MODEL = 'authentication.Driver'
-
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "drf_yasg",
-    "rest_framework",
-    "authentication",
-    'corsheaders',  # For CORS
-    'cloudinary',  # Cloudinary support
-    'cloudinary_storage',  # Cloudinary storage backend
-    'phonenumber_field',
-    'django_extensions',
-
-]
-
-# No single AUTH_USER_MODEL since we handle User and Driver separately
-# AUTH_USER_MODEL = 'authentication.User'  # Comment out or remove
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Must be first
@@ -92,7 +70,7 @@ TEMPLATES = [
     },
 ]
 
-
+# Consolidated REST_FRAMEWORK settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -106,9 +84,6 @@ WSGI_APPLICATION = 'toota.wsgi.application'
 ASGI_APPLICATION = 'toota.asgi.application'
 
 # Email settings
-
-WSGI_APPLICATION = "toota.wsgi.application"
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -116,13 +91,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
-
 
 # JWT settings
 SIMPLE_JWT = {
@@ -137,8 +105,7 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-
-# Cloudinary settings
+# Cloudinary settings (consolidated)
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME'),
     api_key=config('CLOUDINARY_API_KEY'),
@@ -146,6 +113,7 @@ cloudinary.config(
     secure=True
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 # Database settings
 DATABASES = {
     "default": dj_database_url.config(
@@ -155,7 +123,6 @@ DATABASES = {
     )
 }
 
-
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {
@@ -164,13 +131,12 @@ SWAGGER_SETTINGS = {
             'in': 'header',
         },
     },
+    'USE_SESSION_AUTH': False,
 }
 
 DIRECT_URL = config('DIRECT_URL')
 
 # Password validation
-DIRECT_URL = config('DIRECT_URL')
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -178,7 +144,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Channels settings (single definition)
+# Channels settings
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For local testing
@@ -195,32 +161,13 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
 STATIC_URL = '/static/'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-STATIC_URL = "static/"
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-cloudinary.config(
-    cloud_name = config('CLOUDINARY_CLOUD_NAME'),
-    api_key = config('CLOUDINARY_API_KEY'),
-    api_secret = config('CLOUDINARY_API_SECRET'),
-    secure=True
-)
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
-
-    "https://toota-mobile-sa.onrender.com",
-    "http://127.0.0.1:8000",
-
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -228,16 +175,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
 ]
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header',
-        },
-    },
-    'USE_SESSION_AUTH': False,
-}
 
 # Logging for debugging
 LOGGING = {
