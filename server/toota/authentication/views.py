@@ -327,11 +327,7 @@ class ProfileView(APIView):
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(
-        security=[{'Bearer': []}],
-
-
+        
     @swagger_auto_schema(
         security=[{'Bearer': []}],
         responses={200: UserProfileSerializer()}
