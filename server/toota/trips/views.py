@@ -85,6 +85,7 @@ class UpdateTripStatusView(APIView):
 
 
 class CalculateFareView(APIView):
+     permission_classes = []  # Allow unauthenticated access
     """
     POST endpoint to calculate and return an estimated fare for a trip.
     Expected payload includes pickup and destination coordinates,
