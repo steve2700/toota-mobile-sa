@@ -242,7 +242,7 @@ class EmailVerificationSerializer(serializers.Serializer):
 class ResendOTPSerializer(serializers.Serializer):
     """
     Serializer for resending an OTP.
-    Only requires the user's email.
+    Only requires the users email.
     """
     email = serializers.EmailField()
 
