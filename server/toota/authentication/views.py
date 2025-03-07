@@ -12,8 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
-
-
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -64,9 +62,6 @@ class BaseSignupView(APIView):
             except IntegrityError:
                 return Response({"error": "An account with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
 
 
 class BaseLoginView(APIView):
@@ -131,7 +126,90 @@ class BaseResetPasswordView(APIView):
     model_class = None
     permission_classes = []  # Allow unauthenticated access
 
+    success_message = "Signup successful. Check your email for OTP."
 
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = serializer.save()
+                # Generate OTP
+                otp_code = generate_otp()
+                # Create OTP instance
+                if isinstance(user, User):
+                    OTP.objects.create(user=user, code=otp_code)
+                elif isinstance(user, Driver):
+                    OTP.objects.create(driver=user, code=otp_code)
+                else:
+                    return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+                # Send OTP via email
+                email_sent = send_verification_otp_email(user.email, otp_code)
+                if email_sent:
+                    return Response({"message": self.success_message}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": "Failed to send OTP email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except IntegrityError:
+                return Response({"error": "An account with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BaseLoginView(APIView):
+    """
+    Base view for handling login.
+    Expects a serializer_class attribute that validates and returns a user.
+    """
+    serializer_class = None
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token)
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BaseForgotPasswordView(APIView):
+    """
+    Base view for handling forgot password.
+    Expects a model_class attribute (User or Driver) that has an OTP relation.
+    """
+    model_class = None
+
+    def post(self, request):
+        email = request.data.get("email")
+        try:
+            obj = self.model_class.objects.get(email=email)
+            reset_otp = generate_otp()
+            # For User or Driver, update the OTP instance accordingly.
+            if isinstance(obj, User):
+                otp_instance, created = OTP.objects.get_or_create(user=obj)
+            elif isinstance(obj, Driver):
+                otp_instance, created = OTP.objects.get_or_create(driver=obj)
+            else:
+                return Response({"error": "Invalid object type."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            otp_instance.code = reset_otp
+            # Update created_at manually since auto_now_add doesn't update on save.
+            otp_instance.created_at = now()
+            otp_instance.is_verified = False
+            otp_instance.save()
+            send_password_reset_otp_email(obj.email, reset_otp, validity_minutes=60)
+            return Response({"message": "OTP sent to email for password reset."},
+                            status=status.HTTP_200_OK)
+        except self.model_class.DoesNotExist:
+            return Response({"error": "User not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+class BaseResetPasswordView(APIView):
+    """
+    Base view for handling password reset using OTP.
+    Expects a model_class attribute (User or Driver) with an OTP relation.
+    """
+    model_class = None
     def post(self, request):
         email = request.data.get("email")
         provided_otp = request.data.get("otp")
@@ -252,6 +330,19 @@ class ProfileView(APIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
+
+
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        responses={200: UserProfileSerializer()}
+    )
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+
         request_body=UserProfileSerializer,
         responses={
             200: "Profile updated successfully.",
@@ -419,6 +510,11 @@ class ChangePasswordView(APIView):
 class CommonVerifyEmailView(APIView):
     permission_classes = []  # Ensures no authentication required
 
+    """
+    Common endpoint to verify a user's email (for both client users and drivers).
+    Expects 'email' and 'otp' in the request.
+    """
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -440,6 +536,9 @@ class CommonVerifyEmailView(APIView):
             return Response({"error": "Email and OTP are required."},
                             status=status.HTTP_400_BAD_REQUEST)
         
+
+        # Try to find the user in the User model; if not found, try Driver.
+
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -449,23 +548,36 @@ class CommonVerifyEmailView(APIView):
                 return Response({"error": "User not found."},
                                 status=status.HTTP_404_NOT_FOUND)
         
+
+
+        # Ensure an OTP instance exists for this user.
+
         try:
             otp_instance = user_obj.otp
         except Exception:
             return Response({"error": "No OTP found for this user."},
                             status=status.HTTP_400_BAD_REQUEST)
         
+
         otp_validity_duration = timedelta(minutes=60)
+
+        # Set OTP validity duration to 60 minutes (1 hour)
+        otp_validity_duration = timedelta(minutes=60)
+        
+        # Compare the provided OTP with the stored OTP code and check expiration.
+
         if otp_instance.code != otp_input or (now() - otp_instance.created_at) > otp_validity_duration:
             return Response({"error": "Invalid or expired OTP."},
                             status=status.HTTP_400_BAD_REQUEST)
         
+
+        # OTP is valid; activate the user and remove the OTP record.
+
         user_obj.is_active = True
         otp_instance.delete()
         user_obj.save()
         return Response({"message": "Email verified successfully."},
                         status=status.HTTP_200_OK)
-
 
 class ResendVerificationCodeView(APIView):
     """
