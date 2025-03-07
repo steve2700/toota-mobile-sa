@@ -85,12 +85,13 @@ class UpdateTripStatusView(APIView):
 
 
 class CalculateFareView(APIView):
-     permission_classes = []  # Allow unauthenticated access
+     
     """
     POST endpoint to calculate and return an estimated fare for a trip.
     Expected payload includes pickup and destination coordinates,
     vehicle_type, and an optional surge flag.
     """
+    permission_classes = []  # Allow unauthenticated access
     @swagger_auto_schema(
         operation_description="Calculate the fare for a trip based on vehicle type, distance, and time.",
         request_body=TripDescriptionSerializer,
