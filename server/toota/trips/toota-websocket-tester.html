@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toota WebSocket Tester - South Africa</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .panel { flex: 1; min-width: 400px; border: 1px solid #ccc; padding: 15px; border-radius: 5px; background-color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .messages { height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; background-color: #f9f9f9; }
+        .input-area { display: flex; }
+        textarea { flex: 1; height: 80px; margin-right: 10px; padding: 8px; border: 1px solid #ddd; }
+        button { padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        h2 { margin-top: 0; color: #333; }
+        .connected { color: green; }
+        .disconnected { color: red; }
+        .header { background-color: #3498db; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .param-input { margin-bottom: 10px; }
+        .param-input label { display: inline-block; width: 100px; }
+        .param-input input, .param-input select { width: 250px; padding: 5px; }
+        .message-template { margin-top: 15px; }
+        .message-template button { margin-right: 5px; background-color: #2980b9; }
+        hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
+        .auth-section { margin-bottom: 20px; padding: 15px; background-color: #f1f9f1; border-radius: 5px; border: 1px solid #ddd; }
+        .auth-title { margin-top: 0; font-size: 18px; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Toota WebSocket Tester - South Africa</h1>
+        <p>Test WebSocket connections for Toota's transport and logistics system in South Africa</p>
+    </div>
+    
+    <div class="auth-section">
+        <h3 class="auth-title">Authentication</h3>
+        <div class="param-input">
+            <label for="driverToken">Driver Token:</label>
+            <input type="text" id="driverToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImRyaXZlciJ9.exampleDriverToken" style="width: 500px;">
+        </div>
+        <div class="param-input">
+            <label for="userToken">User Token:</label>
+            <input type="text" id="userToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InVzZXIifQ.exampleUserToken" style="width: 500px;">
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Driver Location <span id="driverLocationStatus" class="disconnected">(Disconnected)</span></h2>
+            <div class="param-input">
+                <label for="driverLocationDriverId">Driver ID:</label>
+                <input type="text" id="driverLocationDriverId" value="1">
+            </div>
+            <div class="param-input">
+                <label for="driverLocationUrl">WebSocket URL:</label>
+                <input type="text" id="driverLocationUrl" value="ws://localhost:8000/ws/trips/driver/location/">
+            </div>
+            <div>
+                <button id="driverLocationConnect">Connect</button>
+                <button id="driverLocationDisconnect" disabled>Disconnect</button>
+            </div>
+            
+            <div class="messages" id="driverLocationMessages"></div>
+            
+            <div class="input-area">
+                <textarea id="driverLocationMessage" placeholder="Enter JSON message to send..."></textarea>
+                <button id="driverLocationSend" disabled>Send</button>
+            </div>
+            
+            <div class="message-template">
+                <button id="sendLocationUpdate">Send Location Update</button>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Passenger Get Location <span id="passengerLocationStatus" class="disconnected">(Disconnected)</span></h2>
+            <div class="param-input">
+                <label for="passengerDriverId">Driver ID:</label>
+                <input type="text" id="passengerDriverId" value="1">
+            </div>
+            <div class="param-input">
+                <label for="passengerLocationUrl">WebSocket URL:</label>
+                <input type="text" id="passengerLocationUrl" value="ws://localhost:8000/ws/trips/user/location/">
+            </div>
+            <div>
+                <button id="passengerLocationConnect">Connect</button>
+                <button id="passengerLocationDisconnect" disabled>Disconnect</button>
+            </div>
+            
+            <div class="messages" id="passengerLocationMessages"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Trip Request <span id="tripRequestStatus" class="disconnected">(Disconnected)</span></h2>
+            <div class="param-input">
+                <label for="tripRequestDriverId">Driver ID:</label>
+                <input type="text" id="tripRequestDriverId" value="1">
+            </div>
+            <div class="param-input">
+                <label for="tripRequestUrl">WebSocket URL:</label>
+                <input type="text" id="tripRequestUrl" value="ws://localhost:8000/ws/trips/user/request/">
+            </div>
+            <div>
+                <button id="tripRequestConnect">Connect</button>
+                <button id="tripRequestDisconnect" disabled>Disconnect</button>
+            </div>
+            
+            <div class="messages" id="tripRequestMessages"></div>
+            
+            <div class="input-area">
+                <textarea id="tripRequestMessage" placeholder="Enter JSON message to send..."></textarea>
+                <button id="tripRequestSend" disabled>Send</button>
+            </div>
+            
+            <div class="message-template">
+                <button id="sendTripRequest">Create Trip Request</button>
+                <select id="vehicleTypeSelect">
+                    <option value="1 ton Truck">1 ton Truck</option>
+                    <option value="1.5 ton Truck">1.5 ton Truck</option>
+                    <option value="2 ton Truck">2 ton Truck</option>
+                    <option value="4 ton Truck">4 ton Truck</option>
+                    <option value="Bakkie">Bakkie</option>
+                    <option value="8 ton Truck">8 ton Truck</option>
+                    <option value="Motorbike">Motorbike</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Driver Trip <span id="driverTripStatus" class="disconnected">(Disconnected)</span></h2>
+            <div class="param-input">
+                <label for="driverTripDriverId">Driver ID:</label>
+                <input type="text" id="driverTripDriverId" value="1">
+            </div>
+            <div class="param-input">
+                <label for="driverTripUrl">WebSocket URL:</label>
+                <input type="text" id="driverTripUrl" value="ws://localhost:8000/ws/trips/driver/response/">
+            </div>
+            <div>
+                <button id="driverTripConnect">Connect</button>
+                <button id="driverTripDisconnect" disabled>Disconnect</button>
+            </div>
+            
+            <div class="messages" id="driverTripMessages"></div>
+            
+            <div class="input-area">
+                <textarea id="driverTripMessage" placeholder="Enter JSON message to send..."></textarea>
+                <button id="driverTripSend" disabled>Send</button>
+            </div>
+            
+            <div class="message-template">
+                <button id="acceptTrip">Accept Trip</button>
+                <button id="rejectTrip">Reject Trip</button>
+                <button id="pickupTrip">Picked Up</button>
+                <button id="inProgressTrip">In Progress</button>
+                <button id="completeTrip">Complete Trip</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to create WebSocket clients
+        function setupClient(type) {
+            const connectBtn = document.getElementById(`${type}Connect`);
+            const disconnectBtn = document.getElementById(`${type}Disconnect`);
+            const sendBtn = document.getElementById(`${type}Send`);
+            const urlInput = document.getElementById(`${type}Url`);
+            const messageInput = document.getElementById(`${type}Message`);
+            const messagesDiv = document.getElementById(`${type}Messages`);
+            const statusSpan = document.getElementById(`${type}Status`);
+            
+            // Get driver ID based on client type
+            const getDriverId = () => {
+                const driverIdField = document.getElementById(`${type}DriverId`);
+                return driverIdField ? driverIdField.value : '';
+            };
+            
+            // Build WebSocket URL with driver ID
+            const getFullUrl = () => {
+                const driverId = getDriverId();
+                let url = urlInput.value;
+                if (!url.endsWith('/')) url += '/';
+                return url + driverId + '/';
+            };
+            
+            // Get appropriate token based on client type
+            const getToken = () => {
+                // Driver-related sockets use driver token, user-related use user token
+                if (type.includes('driver')) {
+                    return document.getElementById('driverToken').value;
+                } else {
+                    return document.getElementById('userToken').value;
+                }
+            };
+            
+            connectBtn.addEventListener('click', () => {
+                try {
+                    const fullUrl = getFullUrl();
+                    const token = getToken();
+                    
+                    // Create WebSocket with authentication
+                    window[`${type}Socket`] = new WebSocket(fullUrl);
+                    
+                    addMessage(messagesDiv, `Connecting to ${fullUrl}...`, "system");
+                    
+                    window[`${type}Socket`].onopen = () => {
+                        // Send authentication message immediately after connection
+                        const authMessage = {
+                            type: "authentication",
+                            token: token
+                        };
+                        
+                        window[`${type}Socket`].send(JSON.stringify(authMessage));
+                        addMessage(messagesDiv, "Sent authentication token", "system");
+                        
+                        statusSpan.textContent = "(Connected)";
+                        statusSpan.className = "connected";
+                        connectBtn.disabled = true;
+                        disconnectBtn.disabled = false;
+                        sendBtn.disabled = false;
+                        addMessage(messagesDiv, "Connected to server", "system");
+                        
+                        // Enable template buttons
+                        enableTemplateButtons(type);
+                    };
+                    
+                    window[`${type}Socket`].onclose = (event) => {
+                        statusSpan.textContent = "(Disconnected)";
+                        statusSpan.className = "disconnected";
+                        connectBtn.disabled = false;
+                        disconnectBtn.disabled = true;
+                        sendBtn.disabled = true;
+                        
+                        let reason = "";
+                        if (event.code === 1000) {
+                            reason = "Normal closure";
+                        } else if (event.code === 1003) {
+                            reason = "Invalid data";
+                        } else if (event.code === 1008) {
+                            reason = "Policy violation (possibly authentication failed)";
+                        } else if (event.code === 1011) {
+                            reason = "Internal server error";
+                        }
+                        
+                        addMessage(messagesDiv, `Disconnected from server. Code: ${event.code} ${reason ? '- ' + reason : ''}`, "system");
+                        
+                        // Disable template buttons
+                        disableTemplateButtons(type);
+                    };
+                    
+                    window[`${type}Socket`].onerror = (error) => {
+                        addMessage(messagesDiv, "Error: Connection failed", "error");
+                    };
+                    
+                    window[`${type}Socket`].onmessage = (event) => {
+                        try {
+                            // Try to parse and pretty-print JSON
+                            const parsedData = JSON.parse(event.data);
+                            const formattedData = JSON.stringify(parsedData, null, 2);
+                            addMessage(messagesDiv, formattedData, "received");
+                            
+                            // Check for authentication response
+                            if (parsedData.type === "authentication_response") {
+                                if (parsedData.status === "success") {
+                                    addMessage(messagesDiv, "✅ Authentication successful", "system");
+                                } else {
+                                    addMessage(messagesDiv, "❌ Authentication failed: " + parsedData.message, "error");
+                                }
+                            }
+                        } catch (e) {
+                            // If not JSON, display as is
+                            addMessage(messagesDiv, event.data, "received");
+                        }
+                    };
+                } catch (error) {
+                    addMessage(messagesDiv, "Error: " + error.message, "error");
+                }
+            });
+            
+            disconnectBtn.addEventListener('click', () => {
+                if (window[`${type}Socket`]) {
+                    window[`${type}Socket`].close();
+                    window[`${type}Socket`] = null;
+                }
+            });
+            
+            sendBtn.addEventListener('click', () => {
+                if (window[`${type}Socket`] && messageInput.value) {
+                    try {
+                        // Try to parse the input as JSON to validate it
+                        const jsonInput = JSON.parse(messageInput.value);
+                        window[`${type}Socket`].send(JSON.stringify(jsonInput));
+                        addMessage(messagesDiv, JSON.stringify(jsonInput, null, 2), "sent");
+                    } catch (e) {
+                        addMessage(messagesDiv, "Error: Invalid JSON", "error");
+                    }
+                }
+            });
+            
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+        }
+        
+        // Add message to the messages div
+        function addMessage(container, message, type) {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.style.marginBottom = '5px';
+            messageDiv.style.padding = '5px';
+            messageDiv.style.borderBottom = '1px solid #eee';
+            
+            if (type === 'sent') {
+                messageDiv.style.color = '#2980b9';
+                messageDiv.innerHTML = `<strong>${timestamp} ▶</strong> <pre style="margin: 5px 0;">${message}</pre>`;
+            } else if (type === 'received') {
+                messageDiv.style.color = '#27ae60';
+                messageDiv.innerHTML = `<strong>${timestamp} ◀</strong> <pre style="margin: 5px 0;">${message}</pre>`;
+            } else if (type === 'system') {
+                messageDiv.style.color = '#7f8c8d';
+                messageDiv.innerHTML = `<strong>${timestamp}</strong> 🔄 ${message}`;
+            } else if (type === 'error') {
+                messageDiv.style.color = '#c0392b';
+                messageDiv.innerHTML = `<strong>${timestamp}</strong> ❌ ${message}`;
+            }
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Enable template message buttons
+        function enableTemplateButtons(type) {
+            if (type === 'driverLocation') {
+                document.getElementById('sendLocationUpdate').disabled = false;
+            } else if (type === 'tripRequest') {
+                document.getElementById('sendTripRequest').disabled = false;
+                document.getElementById('vehicleTypeSelect').disabled = false;
+            } else if (type === 'driverTrip') {
+                document.getElementById('acceptTrip').disabled = false;
+                document.getElementById('rejectTrip').disabled = false;
+                document.getElementById('pickupTrip').disabled = false;
+                document.getElementById('inProgressTrip').disabled = false;
+                document.getElementById('completeTrip').disabled = false;
+            }
+        }
+        
+        // Disable template message buttons
+        function disableTemplateButtons(type) {
+            if (type === 'driverLocation') {
+                document.getElementById('sendLocationUpdate').disabled = true;
+            } else if (type === 'tripRequest') {
+                document.getElementById('sendTripRequest').disabled = true;
+                document.getElementById('vehicleTypeSelect').disabled = true;
+            } else if (type === 'driverTrip') {
+                document.getElementById('acceptTrip').disabled = true;
+                document.getElementById('rejectTrip').disabled = true;
+                document.getElementById('pickupTrip').disabled = true;
+                document.getElementById('inProgressTrip').disabled = true;
+                document.getElementById('completeTrip').disabled = true;
+            }
+        }
+        
+        // Setup all WebSocket clients
+        setupClient('driverLocation');
+        setupClient('passengerLocation');
+        setupClient('tripRequest');
+        setupClient('driverTrip');
+        
+        // Template message event handlers
+        document.getElementById('sendLocationUpdate').addEventListener('click', () => {
+            // South Africa coordinates (Johannesburg area)
+            const randomLat = (-26.1 + Math.random() * 0.1).toFixed(6);
+            const randomLng = (28.0 + Math.random() * 0.1).toFixed(6);
+            const message = {
+                latitude: parseFloat(randomLat),
+                longitude: parseFloat(randomLng)
+            };
+            document.getElementById('driverLocationMessage').value = JSON.stringify(message, null, 2);
+        });
+        
+        document.getElementById('sendTripRequest').addEventListener('click', () => {
+            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+            const message = {
+                action: "create_trip",
+                vehicle_type: vehicleType,
+                pickup: "Sandton City, Johannesburg",
+                destination: "Menlyn Mall, Pretoria",
+                pickup_lat: -26.1063,
+                pickup_lon: 28.0567,
+                dest_lat: -25.7827,
+                dest_lon: 28.2755,
+                surge: false,
+                load_description: "Office furniture delivery"
+            };
+            document.getElementById('tripRequestMessage').value = JSON.stringify(message, null, 2);
+        });
+        
+        document.getElementById('acceptTrip').addEventListener('click', () => {
+            const tripId = generateMockUUID();
+            const vehicleType = document.getElementById('vehicleTypeSelect').value || "1 ton Truck";
+            const message = {
+                user_id: 1,
+                trip_id: tripId,
+                trip_response_status: "accepted",
+                trip_info: {
+                    pickup: "Sandton City, Johannesburg",
+                    destination: "Menlyn Mall, Pretoria",
+                    pickup_lat: -26.1063,
+                    pickup_long: 28.0567,
+                    dest_lat: -25.7827,
+                    dest_long: 28.2755,
+                    vehicle_type: vehicleType,
+                    load_description: "Office furniture delivery"
+                }
+            };
+            document.getElementById('driverTripMessage').value = JSON.stringify(message, null, 2);
+        });
+        
+        document.getElementById('rejectTrip').addEventListener('click', () => {
+            const message = {
+                user_id: 1,
+                trip_response_status: "rejected"
+            };
+            document.getElementById('driverTripMessage').value = JSON.stringify(message, null, 2);
+        });
+
+        document.getElementById('pickupTrip').addEventListener('click', () => {
+            const tripId = generateMockUUID();
+            const message = {
+                user_id: 1,
+                trip_id: tripId,
+                trip_status: "picked up"
+            };
+            document.getElementById('driverTripMessage').value = JSON.stringify(message, null, 2);
+        });
+
+        document.getElementById('inProgressTrip').addEventListener('click', () => {
+            const tripId = generateMockUUID();
+            const message = {
+                user_id: 1,
+                trip_id: tripId,
+                trip_status: "in progress"
+            };
+            document.getElementById('driverTripMessage').value = JSON.stringify(message, null, 2);
+        });
+
+        document.getElementById('completeTrip').addEventListener('click', () => {
+            const tripId = generateMockUUID();
+            const message = {
+                user_id: 1,
+                trip_id: tripId,
+                trip_status: "completed",
+                trip_details: {
+                    distance_km: 58.3,
+                    duration_minutes: 65,
+                    final_fare: 858.0
+                }
+            };
+            document.getElementById('driverTripMessage').value = JSON.stringify(message, null, 2);
+        });
+        
+        // Helper function to generate a mock UUID for trip IDs
+        function generateMockUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        // Initially disable template buttons
+        document.getElementById('sendLocationUpdate').disabled = true;
+        document.getElementById('sendTripRequest').disabled = true;
+        document.getElementById('vehicleTypeSelect').disabled = true;
+        document.getElementById('acceptTrip').disabled = true;
+        document.getElementById('rejectTrip').disabled = true;
+        document.getElementById('pickupTrip').disabled = true;
+        document.getElementById('inProgressTrip').disabled = true;
+        document.getElementById('completeTrip').disabled = true;
+    </script>
+</body>
+</html>

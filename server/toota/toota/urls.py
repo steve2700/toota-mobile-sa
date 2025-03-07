@@ -5,7 +5,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
 # Use the production URL as the default for Swagger
-swagger_url = "https://toota-mobile-sa.onrender.com"
+swagger_url = "http://127.0.0.1:8000/"
 
 # Define the schema view for Swagger UI
 schema_view = get_schema_view(
@@ -31,6 +31,7 @@ urlpatterns = [
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path("auth/", include("authentication.urls")),  # Authentication-related endpoints
+    path("trips/", include("trips.urls")),  # Location-related endpoints
     # Uncomment the following when the apps are ready:
     # path("trips/", include("trips.urls")),          # Trips-related endpoints
     # path("payments/", include("payments.urls")),    # Payments-related endpoints

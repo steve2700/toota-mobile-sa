@@ -99,6 +99,7 @@ class Driver(AbstractCustomUser):
     license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     license_expiry = models.DateField(null=True, blank=True)
     VEHICLE_CHOICES = [
+        ('MotorBike', 'MotorBike'),
         ('1 ton Truck', '1 ton Truck'),
         ('1.5 ton Truck', '1.5 ton Truck'),
         ('2 ton Truck', '2 ton Truck'),
@@ -112,6 +113,10 @@ class Driver(AbstractCustomUser):
     number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
     profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    is_available = models.BooleanField(default=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
