@@ -146,13 +146,7 @@ cloudinary.config(
     secure=True
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
 # Database settings
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL'),
-        conn_max_age=0,
-
 DATABASES = {
     "default": dj_database_url.config(
         default=config('DATABASE_URL'),
