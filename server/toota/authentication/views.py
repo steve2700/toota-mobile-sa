@@ -124,33 +124,32 @@ class BaseResetPasswordView(APIView):
     Expects a model_class attribute (User or Driver) with an OTP relation.
     """
     model_class = None
-    permission_classes = []  # Allow unauthenticated access
-
-    success_message = "Signup successful. Check your email for OTP."
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
+        email = request.data.get("email")
+        provided_otp = request.data.get("otp")
+        new_password = request.data.get("new_password")
+        try:
+            obj = self.model_class.objects.get(email=email)
             try:
-                user = serializer.save()
-                # Generate OTP
-                otp_code = generate_otp()
-                # Create OTP instance
-                if isinstance(user, User):
-                    OTP.objects.create(user=user, code=otp_code)
-                elif isinstance(user, Driver):
-                    OTP.objects.create(driver=user, code=otp_code)
-                else:
-                    return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
-                # Send OTP via email
-                email_sent = send_verification_otp_email(user.email, otp_code)
-                if email_sent:
-                    return Response({"message": self.success_message}, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({"error": "Failed to send OTP email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except IntegrityError:
-                return Response({"error": "An account with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                otp_instance = obj.otp
+            except Exception:
+                return Response({"error": "OTP not found for this user."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            # Set OTP validity to 60 minutes.
+            otp_validity_duration = timedelta(minutes=60)
+            if otp_instance.code != provided_otp or (now() - otp_instance.created_at) > otp_validity_duration:
+                return Response({"error": "Invalid or expired OTP."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj.set_password(new_password)
+            otp_instance.delete()  # Clear OTP after successful reset
+            obj.save()
+            return Response({"message": "Password reset successful."},
+                            status=status.HTTP_200_OK)
+        except self.model_class.DoesNotExist:
+            return Response({"error": "User not found."},
+                            status=status.HTTP_404_NOT_FOUND)
+
 
 ###############################################################################
 # User Endpoints
@@ -210,6 +209,7 @@ class UserForgotPasswordView(BaseForgotPasswordView):
 
 class UserResetPasswordView(BaseResetPasswordView):
     model_class = User
+    permission_classes = []
 
     @swagger_auto_schema(
         request_body=openapi.Schema(
@@ -329,6 +329,8 @@ class DriverForgotPasswordView(BaseForgotPasswordView):
 
 class DriverResetPasswordView(BaseResetPasswordView):
     model_class = Driver
+    permission_classes = []
+    
 
     @swagger_auto_schema(
         request_body=openapi.Schema(
