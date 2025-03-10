@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Dio Provider for Dependency Injection
 final dioProvider = Provider<Dio>((ref) {
   return Dio(BaseOptions(
-    baseUrl: 'https://toota-mobile-sa.onrender.com/swagger/',
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
+    baseUrl: 'https://toota-mobile-sa.onrender.com/',
     headers: {"Content-Type": "application/json"},
   ));
 });
@@ -19,7 +17,7 @@ class AuthService {
   Future<bool> login(String email, String password) async {
     try {
       final response = await _dio.post(
-        'login/user',
+        '/auth/login/user',
         data: {'email': email, 'password': password},
       );
       return response.statusCode == 200;
@@ -31,7 +29,7 @@ class AuthService {
   Future<bool> loginDriver(String email, String password) async {
     try {
       final response = await _dio.post(
-        'login/driver',
+        '/auth/login/driver',
         data: {'email': email, 'password': password},
       );
       return response.statusCode == 200;

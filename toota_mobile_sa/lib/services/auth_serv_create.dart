@@ -4,8 +4,6 @@ class AuthService {
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: "https://toota-mobile-sa.onrender.com",
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
       headers: {"Content-Type": "application/json"},
     ),
   );
@@ -13,7 +11,7 @@ class AuthService {
   Future<Map<String, dynamic>> signUp(String email, String password) async {
     try {
       Response response = await _dio.post(
-        "/swagger/signup/user/",
+        "/auth/signup/user/",
         data: {"email": email, "password": password},
       );
       return response.data;
@@ -28,7 +26,7 @@ class AuthService {
   Future<Map<String, dynamic>> signUpDriver(String email, String password) async {
     try {
       Response response = await _dio.post(
-        "/swagger/signup/driver/",
+        "/auth/signup/driver/",
         data: {"email": email, "password": password},
       );
       return response.data;

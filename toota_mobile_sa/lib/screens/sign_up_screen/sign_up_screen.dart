@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toota_mobile_sa/providers/auth_provider_create.dart'; // Import the provider
 import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/screens/sign_up_screen/sign_up_screen_one/sign_up_screen_one.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   final String role;
@@ -45,8 +46,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sign up successful. Please verify your email')),
       );
-      Navigator.pushReplacementNamed(context, RouteNames.signUpOne);
-      // Navigate to next screen if needed
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SignUpScreenOne(email: email, role: widget.role),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Sign up failed. Please try again")),
