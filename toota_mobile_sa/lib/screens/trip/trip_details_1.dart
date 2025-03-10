@@ -7,6 +7,8 @@ final loadDescriptionProvider = StateProvider<String>((ref) => '');
 
 
 class TripDetailsScreen extends ConsumerWidget {
+  const TripDetailsScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedVehicle = ref.watch(vehicleTypeProvider);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
-
+import 'package:toota_mobile_sa/screens/Welcome Screen/welcome_screen.dart';
 import '../../widgets/box_shadow.dart';
 
 class RoleScreen extends StatefulWidget {
@@ -163,9 +163,9 @@ class _RoleScreenState extends State<RoleScreen> {
                       const EdgeInsets.symmetric(horizontal: 140, vertical: 18),
                 ).copyWith(
                   // Define the disabled state explicitly
-                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                    (Set<WidgetState> states) {
-                      if (states.contains(WidgetState.disabled)) {
+                  backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                      if (states.contains(MaterialState.disabled)) {
                         return AppColors
                             .disabledButtonColor; // Use your custom disabled color
                       }
@@ -176,8 +176,15 @@ class _RoleScreenState extends State<RoleScreen> {
                 onPressed: selectedRole == null
                     ? null // Disable button if no role is selected
                     : () {
-                        // Navigate or perform actions
-                        Navigator.pushNamed(context, RouteNames.welcome);
+                        // Navigate to WelcomeScreen with the selected role
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WelcomeScreen(
+                              role: selectedRole!,
+                            ),
+                          ),
+                        );
                       },
                 child: const Text(
                   "Continue",

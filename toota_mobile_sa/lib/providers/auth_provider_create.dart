@@ -10,3 +10,11 @@ final signUpProvider =
     return authService.signUp(credentials['email']!, credentials['password']!);
   },
 );
+
+final signUpDriverProvider =
+    FutureProvider.family<Map<String, dynamic>, Map<String, String>>(
+  (ref, credentials) async {
+    final authService = ref.read(authServiceProvider);
+    return authService.signUpDriver(credentials['email']!, credentials['password']!);
+  },
+);

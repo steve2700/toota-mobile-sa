@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+//import 'package:toota_mobile_sa/constants.dart';
 
 class DashboardOneScreen extends ConsumerWidget {
   const DashboardOneScreen({Key? key}) : super(key: key);
@@ -20,7 +21,7 @@ class DashboardOneScreen extends ConsumerWidget {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,6 +47,10 @@ class DashboardOneScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             TextField(
+            //  onTap: () {
+            //     Navigator.pushReplacementNamed(
+            //           context, RouteNames.dashboard);
+            //   },
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.grey[200],
@@ -60,26 +65,48 @@ class DashboardOneScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
+              children: const [
                 QuickActionButton(label: 'Request trip', icon: Icons.directions_car),
                 QuickActionButton(label: 'Schedule trip', icon: Icons.schedule),
                 QuickActionButton(label: 'Track trip', icon: Icons.location_on),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Vehicles nearby',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Vehicles nearby',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'see all',
+                  style: TextStyle(fontSize: 14, color: Colors.orange),
+                ),
+              ],
             ),
-            Expanded(
-              child: ListView(
-                children: [
-                  VehicleTile(vehicle: 'Toyota Hilux', distance: '2km away'),
-                  VehicleTile(vehicle: '2024 UD Kuzer', distance: '3km away'),
-                  VehicleTile(vehicle: '2024 FAW 3.5 Ton', distance: '3km away'),
-                  VehicleTile(vehicle: 'JAC 1.3 Ton', distance: '4km away'),
-                ],
-              ),
+            const SizedBox(height: 12),
+            Column(
+              children: const [
+                VehicleTile(
+                  imagePath: "hilux.jpeg",
+                  vehicle: 'Toyota Hilux',
+                  type: 'Bakkie',
+                  distance: '2km away',
+                ),
+                VehicleTile(
+                  imagePath: "ud_kuzer.jpeg",
+                  vehicle: '2024 UD Kuzer',
+                  type: '3-ton truck',
+                  distance: '3km away',
+                ),
+                VehicleTile(
+                  imagePath: "faw_trubo.jpeg",
+                  vehicle: '2024 FAW 3.5 Ton',
+                  type: '5-ton truck',
+                  distance: '5km away',
+                ),
+              ],
             ),
           ],
         ),
@@ -96,28 +123,32 @@ class QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.orange),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 14)),
-        ],
-      ),
+    return Column(
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.orange.shade100,
+          child: Icon(icon, color: Colors.orange),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 14)),
+      ],
     );
   }
 }
 
 class VehicleTile extends StatelessWidget {
+  final String imagePath;
   final String vehicle;
+  final String type;
   final String distance;
 
-  const VehicleTile({required this.vehicle, required this.distance, Key? key}) : super(key: key);
+  const VehicleTile({
+    required this.imagePath,
+    required this.vehicle,
+    required this.type,
+    required this.distance,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -125,9 +156,9 @@ class VehicleTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: ListTile(
-        leading: const Icon(Icons.directions_car, color: Colors.orange),
+        leading: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.cover),
         title: Text(vehicle, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: const Text('Bakkie', style: TextStyle(color: Colors.orange)),
+        subtitle: Text(type, style: const TextStyle(color: Colors.orange)),
         trailing: Text(distance, style: const TextStyle(color: Colors.grey)),
       ),
     );
