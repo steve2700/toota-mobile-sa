@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toota_mobile_sa/providers/auth_provider_create.dart'; // Import the provider
 import 'package:toota_mobile_sa/constants.dart';
+
 class SignUpScreen extends ConsumerStatefulWidget {
-  const SignUpScreen({Key? key}) : super(key: key);
+  final String role;
+
+  const SignUpScreen({Key? key, required this.role}) : super(key: key);
 
   @override
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
@@ -20,11 +23,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     if (email.isEmpty || email.length > 255) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email must be 1 and 255")),
+        const SnackBar(content: Text("Email must be between 1 and 255 characters")),
       );
       return;
     }
-   if (password.length < 8 || password.length > 128) {
+    if (password.length < 8 || password.length > 128) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Password must be between 8 and 128 characters")),
       );
@@ -33,8 +36,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     setState(() => isLoading = true);
 
-    final response =
-        await ref.read(signUpProvider({"phone": email, "password": password}).future);
+    final provider = widget.role == "Find a trip" ? signUpProvider : signUpDriverProvider;
+    final response = await ref.read(provider({"email": email, "password": password}).future);
 
     setState(() => isLoading = false);
 
@@ -79,7 +82,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              
               'Sign up to experience convenient transportation at your fingertips.',
               style: TextStyle(fontSize: 16, color: Colors.black54),
               textAlign: TextAlign.center,
@@ -87,10 +89,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             const SizedBox(height: 32),
             TextField(
               controller: _emailController,
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: 'Email',
-                prefixIcon: const Icon(Icons.phone),
+                prefixIcon: const Icon(Icons.email),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -157,7 +159,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ),
             ),
             TextButton(
-              // ignore: use_function_type_syntax_for_parameters
               onPressed: () {
                 Navigator.pushReplacementNamed(context, RouteNames.login);
               },

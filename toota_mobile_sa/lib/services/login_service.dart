@@ -27,5 +27,16 @@ class AuthService {
       throw e.response?.data["message"] ?? "Login failed. Please try again.";
     }
   }
-}
 
+  Future<bool> loginDriver(String email, String password) async {
+    try {
+      final response = await _dio.post(
+        'login/driver',
+        data: {'email': email, 'password': password},
+      );
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      throw e.response?.data["message"] ?? "Login failed. Please try again.";
+    }
+  }
+}

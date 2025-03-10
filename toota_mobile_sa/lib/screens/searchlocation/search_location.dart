@@ -107,7 +107,7 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
                     title: Text("Select Destination"),
                     content: GooglePlaceAutoCompleteTextField(
                       textEditingController: TextEditingController(),
-                      googleAPIKey: "AIzaSyBvVtzDCLzkO9LDjlwCCpBUVmW98JexLLw",
+                      googleAPIKey: "",
                       inputDecoration: InputDecoration(
                         hintText: "Enter destination",
                         border: OutlineInputBorder(),
