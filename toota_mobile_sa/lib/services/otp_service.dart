@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 class OtpService {
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: "https://toota-mobile-sa.onrender.com",
+      baseUrl: "https://toota-mobile-sa.onrender.com/",
       headers: {"Content-Type": "application/json"},
     ),
   );
