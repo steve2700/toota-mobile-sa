@@ -11,15 +11,20 @@ class DashboardOneScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushReplacementNamed(context, RouteNames.kycloading);
+          }
+        },
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+         BottomNavigationBarItem(icon:  Icon(Icons.person), label: 'Profile'),
+         BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+         BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
+         BottomNavigationBarItem(icon:  Icon(Icons.person), label: 'Profile'), 
+
+        ],  
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

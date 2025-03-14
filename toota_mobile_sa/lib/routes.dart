@@ -12,6 +12,7 @@ import 'package:toota_mobile_sa/screens/login_screen/login_screen.dart';
 import 'package:toota_mobile_sa/screens/dashboard/dashboard_one_screen.dart';
 import 'package:toota_mobile_sa/screens/trip/trip_details_1.dart';
 import 'package:toota_mobile_sa/screens/searchlocation/search_location.dart';
+import 'package:toota_mobile_sa/screens/KYC/kyc_loading_screen.dart';
 // Define a function that returns the routes map
 Map<String, WidgetBuilder> getAppRoutes() {
   return {
@@ -27,8 +28,10 @@ Map<String, WidgetBuilder> getAppRoutes() {
     RouteNames.kyctwo: (context) => const KycScreenTwo(),
     RouteNames.tripdetails: (context) => const TripDetailsScreen(),
     RouteNames.routeselection: (context) => const RouteSelectionScreen(),
-
+    RouteNames.kycloading: (context) => const KycLoadingScreen(),
      
     // Add more routes as needed
   };
 }
+
+
