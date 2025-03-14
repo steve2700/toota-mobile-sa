@@ -29,6 +29,7 @@ Map<String, WidgetBuilder> getAppRoutes() {
     RouteNames.tripdetails: (context) => const TripDetailsScreen(),
     RouteNames.routeselection: (context) => const RouteSelectionScreen(),
     RouteNames.kycloading: (context) => const KycLoadingScreen(),
+    
      
     // Add more routes as needed
   };

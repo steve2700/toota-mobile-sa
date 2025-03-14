@@ -15,11 +15,16 @@ class DashboardOneScreen extends ConsumerWidget {
           if (index == 3) {
             Navigator.pushReplacementNamed(context, RouteNames.kycloading);
           }
-        },
+          if (index == 2) {
+            Navigator.pushReplacementNamed(context, RouteNames.tripdetails);
+          }
+        }
+        
+        ,
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
         items: const [
-         BottomNavigationBarItem(icon:  Icon(Icons.person), label: 'Profile'),
+         BottomNavigationBarItem(icon:  Icon(Icons.person), label: 'Home'),
          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Trips'),
          BottomNavigationBarItem(icon:  Icon(Icons.person), label: 'Profile'), 
@@ -54,7 +59,7 @@ class DashboardOneScreen extends ConsumerWidget {
             TextField(
               onTap: () {
                  Navigator.pushReplacementNamed(
-                       context, RouteNames.tripdetails);
+                       context, RouteNames.searchlocation);
              },
               decoration: InputDecoration(
                 filled: true,
@@ -77,9 +82,9 @@ class DashboardOneScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   'Vehicles nearby',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -91,8 +96,8 @@ class DashboardOneScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Column(
-              children: const [
+            const Column(
+              children: [
                 VehicleTile(
                   imagePath: "hilux.jpeg",
                   vehicle: 'Toyota Hilux',

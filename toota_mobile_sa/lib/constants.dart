@@ -26,4 +26,5 @@ class RouteNames {
   static const String tripdetails = '/trip';
   static const String routeselection = '/route';
   static const String kycloading = '/kycloading';
+  static const String searchlocation = '/search';
 }
