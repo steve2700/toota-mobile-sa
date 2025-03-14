@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:toota_mobile_sa/screens/KYC/kyc_screen_two.dart';
 import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_button.dart';
 import '../../constants.dart';
 import '../Welcome Screen/components/arrow_back.dart';
@@ -130,8 +129,7 @@ class KycScreenOne extends StatelessWidget {
                       containerWidth: screenWidth * 0.88, // 88% of screen width
                       label: "Continue",
                       function: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) => const KycScreenTwo()));
+                        Navigator.pushNamed(context, RouteNames.kyctwo);
                       },
                     ),
 

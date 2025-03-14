@@ -23,6 +23,6 @@ class RouteNames {
   static const String signUp = '/signUp';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
-  static const String tripdetails = '/tripDetails';
+  static const String tripdetails = '/trip';
   static const String routeselection = '/route';
 }
