@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/constants.dart';
 
 class DashboardOneScreen extends ConsumerWidget {
   const DashboardOneScreen({Key? key}) : super(key: key);
@@ -47,10 +47,10 @@ class DashboardOneScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             TextField(
-            //  onTap: () {
-            //     Navigator.pushReplacementNamed(
-            //           context, RouteNames.dashboard);
-            //   },
+              onTap: () {
+                 Navigator.pushReplacementNamed(
+                       context, RouteNames.tripdetails);
+             },
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.grey[200],

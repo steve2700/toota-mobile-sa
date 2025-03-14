@@ -7,7 +7,7 @@ class SignUpScreenOne extends ConsumerStatefulWidget {
   final String email;
   final String role;
 
-  const SignUpScreenOne({Key? key, required this.email, required this.role}) : super(key: key);
+  const SignUpScreenOne({super.key, required this.email, required this.role});
 
   @override
   ConsumerState<SignUpScreenOne> createState() => _SignUpScreenOneState();

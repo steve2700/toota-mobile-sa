@@ -6,7 +6,7 @@ import 'package:toota_mobile_sa/constants.dart';
 class LoginScreen extends ConsumerStatefulWidget {
   final String role;
 
-  const LoginScreen({Key? key, required this.role}) : super(key: key);
+  const LoginScreen({super.key, required this.role});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
