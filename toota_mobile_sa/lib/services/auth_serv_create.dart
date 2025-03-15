@@ -11,7 +11,7 @@ class AuthService {
   Future<Map<String, dynamic>> signUp(String email, String password) async {
     try {
       Response response = await _dio.post(
-        "/auth/signup/user/",
+        "auth/signup/user/",
         data: {"email": email, "password": password},
       );
       return response.data;
