@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Center(
               child: CircleAvatar(
                 radius: 36,
-                backgroundColor: Colors.orange,
+                backgroundColor: Colors.white,
                 child: Image.asset('assets/images/icon.png', width: 36, height: 36),
               ),
             ),
@@ -80,12 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Enter your email and password to login.',
-              style: TextStyle(fontSize: 16, color: Colors.black54),
-              textAlign: TextAlign.center,
-            ),
+           
             const SizedBox(height: 32),
             TextField(
               controller: _emailController,
