@@ -130,7 +130,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 ),
                 ElevatedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset('assets/apple.png', width: 24, height: 24),
+                  icon: Image.asset('assets/images/apple.png', width: 24, height: 24),
                   label: const Text('Apple'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
