@@ -26,7 +26,7 @@ class AuthService {
   Future<Map<String, dynamic>> signUpDriver(String email, String password) async {
     try {
       Response response = await _dio.post(
-        "/auth/signup/driver/",
+        "auth/signup/driver/",
         data: {"email": email, "password": password},
       );
       return response.data;
