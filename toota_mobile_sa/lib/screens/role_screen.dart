@@ -200,6 +200,7 @@ class _RoleScreenState extends State<RoleScreen> {
               TextButton(
                 style: TextButton.styleFrom(overlayColor: Colors.transparent),
                 onPressed: () {
+                  Navigator.pushNamed(context, RouteNames.login);
                   // Handle "I already have an account" action
                 },
                 child: const Text(

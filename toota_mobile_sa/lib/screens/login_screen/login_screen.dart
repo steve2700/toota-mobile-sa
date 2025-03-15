@@ -119,16 +119,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: Image.asset('assets/images/google.png', width: 24, height: 24),
                   label: const Text('Google'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset('assets/apple.png', width: 24, height: 24),
+                  icon: Image.asset('assets/images/apple.png', width: 24, height: 24),
                   label: const Text('Apple'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   ),
                 ),

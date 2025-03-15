@@ -10,7 +10,7 @@ class AlreadyHaveAccountButton extends StatelessWidget {
     return TextButton(
       style: TextButton.styleFrom(overlayColor: Colors.transparent),
       onPressed: () {
-        // Handle "I already have an account" action
+        Navigator.pushReplacementNamed(context, RouteNames.login);
       },
       child: const Text(
         "I already have an account",

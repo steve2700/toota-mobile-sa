@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+
+
 
 class RouteSelectionScreen extends StatefulWidget {
   const RouteSelectionScreen({super.key});
@@ -11,9 +13,108 @@ class RouteSelectionScreen extends StatefulWidget {
 }
 
 class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
-  GoogleMapController? mapController;
+  TextEditingController currentLocationController = TextEditingController();
+  TextEditingController dropOffController = TextEditingController();
+  bool isMapSelected = false;
   LatLng? currentLocation;
-  String? destination;
+  LatLng? selectedLocation;
+
+  Future<void> _selectOnMap(BuildContext context) async {
+    final Map<String, LatLng>? result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MapSelectionScreen()),
+    );
+
+    if (result != null) {
+      setState(() {
+        currentLocation = result['current'];
+        selectedLocation = result['destination'];
+        isMapSelected = true;
+        currentLocationController.text = "Current Location: (${currentLocation!.latitude}, ${currentLocation!.longitude})";
+        dropOffController.text = "Destination: (${selectedLocation!.latitude}, ${selectedLocation!.longitude})";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Select your route")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Select your route", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            TextField(
+              controller: currentLocationController,
+              enabled: false,
+              decoration: InputDecoration(
+                hintText: "Fetching current location...",
+                filled: true,
+                fillColor: Colors.orange.shade100,
+                prefixIcon: Icon(Icons.my_location, color: Colors.orange),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: dropOffController,
+              enabled: false,
+              decoration: InputDecoration(
+                hintText: "Select destination on map",
+                filled: true,
+                fillColor: Colors.orange.shade100,
+                prefixIcon: Icon(Icons.search, color: Colors.orange),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _selectOnMap(context),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: Text("Select on map"),
+            ),
+            Spacer(),
+            ElevatedButton(
+              onPressed: isMapSelected ? () {} : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isMapSelected ? Colors.orange : Colors.grey,
+              ),
+              child: Text("Confirm route"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MapSelectionScreen extends StatefulWidget {
+  @override
+  _MapSelectionScreenState createState() => _MapSelectionScreenState();
+}
+
+class _MapSelectionScreenState extends State<MapSelectionScreen> {
+  GoogleMapController? mapController;
+  LatLng currentPosition = LatLng(-26.1076, 28.0567); // Sandton default location
+  LatLng? selectedPosition;
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
+
+  Future<void> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      currentPosition = LatLng(position.latitude, position.longitude);
+    });
+  }
 
   @override
   void initState() {
@@ -21,162 +122,46 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
     _getCurrentLocation();
   }
 
-  Future<void> _getCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      currentLocation = LatLng(position.latitude, position.longitude);
-    });
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back),
-                    onPressed: () {},
-                  ),
-                  SizedBox(height: 10),
-                  Text("Select your route", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 10),
-                  _buildLocationInput("15 West Road South, Sandton", Icons.location_on, isCurrent: true),
-                  _buildLocationInput(destination ?? "Select Destination", Icons.place),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {},
-                    child: Text("Select on map"),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: currentLocation == null
-                  ? Center(child: CircularProgressIndicator())
-                  : GoogleMap(
-                      onMapCreated: _onMapCreated,
-                      initialCameraPosition: CameraPosition(
-                        target: currentLocation!,
-                        zoom: 14.0,
-                      ),
-                      myLocationEnabled: true,
-                    ),
-            ),
-            _buildResultsList(),
-            _buildConfirmButton(),
-          ],
+      appBar: AppBar(title: Text("Select Location")),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: CameraPosition(
+          target: currentPosition,
+          zoom: 15,
         ),
-      ),
-    );
-  }
-
-  Widget _buildLocationInput(String text, IconData icon, {bool isCurrent = false}) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.orange),
-          SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: text,
-                border: InputBorder.none,
-              ),
-              readOnly: !isCurrent,
-              onTap: () async {
-                // Handle destination search
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text("Select Destination"),
-                    content: GooglePlaceAutoCompleteTextField(
-                      textEditingController: TextEditingController(),
-                      googleAPIKey: "",
-                      inputDecoration: InputDecoration(
-                        hintText: "Enter destination",
-                        border: OutlineInputBorder(),
-                      ),
-                      debounceTime: 800,
-                      countries: ["za"],
-                      isLatLngRequired: true,
-                      getPlaceDetailWithLatLng: (prediction) {
-                        setState(() {
-                          destination = prediction.description;
-                        });
-                      },
-                      itemClick: (prediction) {
-                        setState(() {
-                          destination = prediction.description;
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                );
-              },
+        onTap: (LatLng latLng) {
+          setState(() {
+            selectedPosition = latLng;
+          });
+        },
+        markers: {
+          Marker(
+            markerId: MarkerId("current"),
+            position: currentPosition,
+            infoWindow: InfoWindow(title: "Current Location"),
+          ),
+          if (selectedPosition != null)
+            Marker(
+              markerId: MarkerId("destination"),
+              position: selectedPosition!,
+              infoWindow: InfoWindow(title: "Selected Destination"),
             ),
-          ),
-        ],
+        },
       ),
-    );
-  }
-
-  Widget _buildResultsList() {
-    List<Map<String, String>> results = [
-      {"name": "Sandton City Mall", "distance": "2km away"},
-      {"name": "Sandton Train Station", "distance": "3km away"},
-      {"name": "Sandton Hotel", "distance": "5km away"},
-      {"name": "Sandton Hospital", "distance": "4km away"},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Results", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          Column(
-            children: results.map((result) {
-              return ListTile(
-                title: Text(result["name"]!),
-                subtitle: Text(result["distance"]!),
-                trailing: Icon(Icons.bookmark_border, color: Colors.orange),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton(
-        onPressed: () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          minimumSize: Size(double.infinity, 50),
-        ),
-        child: Text("Confirm route", style: TextStyle(fontSize: 16, color: Colors.white)),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.orange,
+        child: Icon(Icons.check),
+        onPressed: () {
+          if (selectedPosition != null) {
+            Navigator.pop(context, {
+              'current': currentPosition,
+              'destination': selectedPosition!,
+            });
+          }
+        },
       ),
     );
   }

@@ -7,7 +7,7 @@ import 'package:toota_mobile_sa/screens/sign_up_screen/sign_up_screen_one/sign_u
 class SignUpScreen extends ConsumerStatefulWidget {
   final String role;
 
-  const SignUpScreen({Key? key, required this.role}) : super(key: key);
+  const SignUpScreen({super.key, required this.role});
 
   @override
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
