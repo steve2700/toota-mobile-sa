@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:toota_mobile_sa/screens/sign_up_screen/sign_up_screen.dart';
 import 'components/arrow_back.dart';
 import 'components/welcome_content.dart';
 import 'components/custom_button.dart';
 import 'components/divider_row.dart';
 import 'components/social_button.dart';
 import 'components/already_have_account_button.dart';
+import 'package:toota_mobile_sa/constants.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final String role;
@@ -53,12 +53,7 @@ class WelcomeScreen extends StatelessWidget {
                   containerWidth: containerWidth,
                   label: "Create an account",
                   function: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SignUpScreen(role: role),
-                      ),
-                    );
+                   Navigator.pushNamed(context, RouteNames.onboarding);
                   },
                 ),
                 const DividerRow(),
