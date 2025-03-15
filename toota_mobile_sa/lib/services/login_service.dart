@@ -17,7 +17,7 @@ class AuthService {
   Future<bool> login(String email, String password) async {
     try {
       final response = await _dio.post(
-        '/auth/login/user',
+        'auth/login/user',
         data: {'email': email, 'password': password},
       );
       return response.statusCode == 200;
