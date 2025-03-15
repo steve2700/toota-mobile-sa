@@ -16,8 +16,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
+  bool isChecked = false; // Checkbox state
 
   void _login() async {
+    if (!isChecked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must agree to the terms and conditions to login")),
+      );
+      return;
+    }
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -80,7 +88,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
-           
             const SizedBox(height: 32),
             TextField(
               controller: _emailController,
@@ -130,16 +137,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
-              'By logging in, you agree to our Terms and Conditions and acknowledge our Privacy Policy.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-              textAlign: TextAlign.center,
+            Row(
+              children: [
+                Checkbox(
+                  value: isChecked,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      isChecked = value ?? false;
+                    });
+                  },
+                ),
+                const Expanded(
+                  child: Text(
+                    'By logging in, you agree to our Terms and Conditions and acknowledge our Privacy Policy.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ),
+              ],
             ),
             const Spacer(),
             SizedBox(
               width: width,
               child: ElevatedButton(
-                onPressed: isLoading ? null : _login,
+                onPressed: isLoading || !isChecked ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   padding: const EdgeInsets.symmetric(vertical: 16),
