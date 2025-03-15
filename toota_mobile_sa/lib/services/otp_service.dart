@@ -11,7 +11,7 @@ class OtpService {
   Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
     try {
       final response = await _dio.post(
-        "/auth/verify-email/",
+        "auth/verify-email/",
         data: {"email": email, "otp": otp},
       );
       return response.data;
