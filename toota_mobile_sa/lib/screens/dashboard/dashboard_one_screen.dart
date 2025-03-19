@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toota_mobile_sa/constants.dart';
 
 class DashboardOneScreen extends ConsumerWidget {
-  const DashboardOneScreen({Key? key}) : super(key: key);
+  const DashboardOneScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,7 +129,7 @@ class QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
 
-  const QuickActionButton({required this.label, required this.icon, Key? key}) : super(key: key);
+  const QuickActionButton({required this.label, required this.icon, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -157,8 +157,8 @@ class VehicleTile extends StatelessWidget {
     required this.vehicle,
     required this.type,
     required this.distance,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

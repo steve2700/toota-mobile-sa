@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final selectedTripProvider = StateProvider<int?>((ref) => null);
 
 class TripSelectionScreen extends ConsumerWidget {
+  const TripSelectionScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTrip = ref.watch(selectedTripProvider);
@@ -49,7 +51,7 @@ class TripOption extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const TripOption({
+  const TripOption({super.key, 
     required this.icon,
     required this.label,
     required this.isSelected,

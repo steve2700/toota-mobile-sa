@@ -1,0 +1,2 @@
+C:/Users/user/Desktop/Toota/toota-mobile-sa/toota_mobile_sa/android/app/.cxx/RelWithDebInfo/3y6h3x72/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/user/Desktop/Toota/toota-mobile-sa/toota_mobile_sa/android/app/.cxx/RelWithDebInfo/3y6h3x72/armeabi-v7a/CMakeFiles/rebuild_cache.dir

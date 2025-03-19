@@ -121,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: Image.asset('assets/images/google.png', width: 24, height: 24),
                   label: const Text('Google'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   ),
                 ),

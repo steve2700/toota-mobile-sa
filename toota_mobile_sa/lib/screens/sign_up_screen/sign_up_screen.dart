@@ -75,7 +75,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             Center(
               child: CircleAvatar(
                 radius: 36,
-                backgroundColor: Colors.orange,
+                backgroundColor: Colors.black,
                 child: Image.asset('assets/images/icon.png', width: 36, height: 36),
               ),
             ),

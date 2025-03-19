@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "C:\\Users\\user\\Documents\\OpenCode 4 Projects\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\groovy\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Users\\user\\Desktop\\Toota\\toota-mobile-sa\\toota_mobile_sa\\android\\app\\.cxx\\RelWithDebInfo\\3y6h3x72\\armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Users\\user\\Desktop\\Toota\\toota-mobile-sa\\toota_mobile_sa\\android\\app\\.cxx\\RelWithDebInfo\\3y6h3x72\\armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

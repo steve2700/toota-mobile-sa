@@ -96,6 +96,8 @@ class _RouteSelectionScreenState extends State<RouteSelectionScreen> {
 }
 
 class MapSelectionScreen extends StatefulWidget {
+  const MapSelectionScreen({super.key});
+
   @override
   _MapSelectionScreenState createState() => _MapSelectionScreenState();
 }

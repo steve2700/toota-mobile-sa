@@ -7,6 +7,8 @@ final keypadStateProvider = StateProvider<KeypadState>((ref) => KeypadState.defa
 enum KeypadState { defaultState, tapped, active, filled, error }
 
 class KeypadScreen extends ConsumerWidget {
+  const KeypadScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final keypadState = ref.watch(keypadStateProvider);
@@ -58,7 +60,7 @@ class KeypadButton extends StatelessWidget {
   final KeypadState state;
   final WidgetRef ref;
 
-  const KeypadButton({
+  const KeypadButton({super.key, 
     required this.number,
     required this.state,
     required this.ref,

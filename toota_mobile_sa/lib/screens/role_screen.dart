@@ -163,9 +163,9 @@ class _RoleScreenState extends State<RoleScreen> {
                       const EdgeInsets.symmetric(horizontal: 140, vertical: 18),
                 ).copyWith(
                   // Define the disabled state explicitly
-                  backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                    (Set<MaterialState> states) {
-                      if (states.contains(MaterialState.disabled)) {
+                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (Set<WidgetState> states) {
+                      if (states.contains(WidgetState.disabled)) {
                         return AppColors
                             .disabledButtonColor; // Use your custom disabled color
                       }

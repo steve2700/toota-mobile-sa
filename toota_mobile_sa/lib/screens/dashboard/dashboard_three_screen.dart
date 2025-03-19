@@ -6,6 +6,8 @@ final locationProvider = StateProvider<String>((ref) => 'Sandton');
 final vehicleArrivalProvider = StateProvider<int>((ref) => 30);
 
 class DashboardThreeScreen extends ConsumerWidget {
+  const DashboardThreeScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = ref.watch(locationProvider);
@@ -105,7 +107,7 @@ class QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  QuickActionButton({required this.icon, required this.label});
+  const QuickActionButton({super.key, required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
