@@ -16,16 +16,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
-  bool isChecked = false; // Checkbox state
 
   void _login() async {
-    if (!isChecked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You must agree to the terms and conditions to login")),
-      );
-      return;
-    }
-
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -51,50 +43,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (response) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login successful')),
+        const SnackBar(content: Text('Login successful')),
       );
       Navigator.pushReplacementNamed(context, RouteNames.onboarding);
-      // Navigate to home screen or next screen if needed
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login failed. Please try again")),
+        const SnackBar(content: Text("Login failed. Please try again")),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: CircleAvatar(
-                radius: 36,
-                backgroundColor: Colors.white,
-                child: Image.asset('assets/images/icon.png', width: 36, height: 36),
-              ),
+              child: Image.asset('assets/images/logo.png', height: 80),
             ),
             const SizedBox(height: 24),
             const Center(
               child: Text(
-                'Login to your account',
+                'Welcome back',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
+            const Center(
+              child: Text(
+                'Log in to continue your journey with Toota.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 24),
             TextField(
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: 'Email',
-                prefixIcon: const Icon(Icons.email),
+                prefixIcon: const Icon(Icons.email, color: Colors.orange),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -104,80 +95,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock, color: Colors.orange),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'Forgotten Password',
+                  style: TextStyle(color: Color.fromARGB(255, 247, 151, 8)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Center(
               child: Text('OR', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton.icon(
+                IconButton(
                   onPressed: () {},
-                  icon: Image.asset('assets/images/google.png', width: 24, height: 24),
-                  label: const Text('Google'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                  ),
+                  icon: Image.asset('assets/images/google.png', width: 36),
                 ),
-                ElevatedButton.icon(
+                const SizedBox(width: 24),
+                IconButton(
                   onPressed: () {},
-                  icon: Image.asset('assets/images/apple.png', width: 24, height: 24),
-                  label: const Text('Apple'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                  ),
+                  icon: Image.asset('assets/images/apple.png', width: 36),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Checkbox(
-                  value: isChecked,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      isChecked = value ?? false;
-                    });
-                  },
-                ),
-                const Expanded(
-                  child: Text(
-                    'By logging in, you agree to our Terms and Conditions and acknowledge our Privacy Policy.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
             SizedBox(
-              width: width,
+              width: double.infinity,
               child: ElevatedButton(
-                onPressed: isLoading || !isChecked ? null : _login,
+                onPressed: isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         'Login',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
               ),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, RouteNames.signUp);
-              },
-              child: const Text('I don\'t have an account'),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, RouteNames.signUp);
+                },
+                child: const Text(
+                  "I don't have an account",
+                  style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                ),
+              ),
             )
           ],
         ),
