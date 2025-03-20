@@ -1,40 +1,42 @@
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AuthService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: "https://toota-mobile-sa.onrender.com/",
-      headers: {"Content-Type": "application/json"},
-    ),
-  );
+  static Future<Map<String, dynamic>> signUp(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('https://toota-mobile-sa.onrender.com/auth/signup/user/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'email': email,
+        'password': password,
+      }),
+    );
 
-  Future<Map<String, dynamic>> signUp(String email, String password) async {
-    try {
-      Response response = await _dio.post(
-        "/auth/signup/user/",
-        data: {"email": email, "password": password},
-      );
-      return response.data;
-    } on DioException catch (e) {
-      return {
-        "success": false,
-        "error": e.response?.data["message"] ?? e.message,
-      };
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to sign up');
     }
   }
 
-  Future<Map<String, dynamic>> signUpDriver(String email, String password) async {
-    try {
-      Response response = await _dio.post(
-        "/auth/signup/driver/",
-        data: {"email": email, "password": password},
-      );
-      return response.data;
-    } on DioException catch (e) {
-      return {
-        "success": false,
-        "error": e.response?.data["message"] ?? e.message,
-      };
+  static Future<Map<String, dynamic>> signUpDriver(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('https://toota-mobile-sa.onrender.com/auth/signup/driver/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to sign up driver');
     }
   }
 }
