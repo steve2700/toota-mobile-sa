@@ -1,0 +1,7 @@
+post http://localhost:8000/auth/login/driver/
+Content-Type: application/json
+
+{
+    "email": "lekan4jesu@gmail.com",
+    "password": "driver123"       
+}

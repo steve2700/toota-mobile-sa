@@ -1,64 +1,58 @@
-import asyncio
-import websockets
+import websocket
+import time
 import json
+import sys
 
-# Passenger and driver details
-USER_ID = "3463e40e-be01-4837-a3d3-a1f25b17fd10"  # Change this to a real user ID
-DRIVER_ID = "1aee28fd-0ce7-498d-8150-7cc0f5ef32b3"   # Change this to the assigned driver ID
-WS_URL = f"ws://localhost:8000/ws/trips/user/request/{DRIVER_ID}/"  # WebSocket URL
+def connect_with_retries(url, headers, max_retries=10, delay=3):
+    for attempt in range(1, max_retries+1):
+        try:
+            ws = websocket.create_connection(url, header=headers)
+            print(f"[INFO] Connected on attempt {attempt}.")
+            return ws
+        except Exception as e:
+            print(f"[WARN] Attempt {attempt} failed: {e}")
+            time.sleep(delay)
+    sys.exit("Failed to connect after several retries.")
 
-async def passenger_simulation():
-    async with websockets.connect(WS_URL) as websocket:
-        print("✅ Connected to WebSocket as Passenger")
+def keep_connection_alive(ws, interval=10):
+    while True:
+        try:
+            ws.send("ping")
+            time.sleep(interval)
+        except Exception as e:
+            print(f"[WARN] Keep-alive ping failed: {e}")
+            break
 
-        while True:
-            action = input("\nEnter 'request' to request a trip, 'cancel' to cancel a trip, or 'exit' to quit: ").strip().lower()
+def test_send_and_receive(url, headers, payload):
+    ws = connect_with_retries(url, headers)
+    try:
+        print("[INFO] Sending payload...")
+        ws.send(json.dumps(payload))
+        # Wait for response; this may block until the server sends a response.
+        response = ws.recv()
+        print("[INFO] Received response:")
+        print(response)
+    except Exception as e:
+        print(f"[ERROR] Exception during send/receive: {e}")
+    finally:
+        ws.close()
 
-            if action == "request":
-                trip_info = {
-                    "pickup": "123 Main Street",
-                    "destination": "456 Elm Street",
-                    "load_description": "2 large bags, 1 small bag"
-                }
-
-                request_data = {
-                    "user_id": USER_ID,
-                    "trip_info": trip_info
-                }
-
-                await websocket.send(json.dumps(request_data))
-                # await asyncio.sleep(2000) 
-                print("🚖 Trip request sent to driver...")
-
-            elif action == "cancel":
-                cancel_data = {
-                    "user_id": USER_ID,
-                    "trip_request_status": "cancelled"
-                }
-
-                await websocket.send(json.dumps(cancel_data))
-                print("❌ Trip cancellation request sent...")
-
-            elif action == "exit":
-                print("👋 Exiting...")
-                break
-
-            else:
-                print("❌ Invalid input. Try again.")
-
-            # Wait for a response from the server
-            response = await websocket.recv()
-            data = json.loads(response)
-
-            if data.get("status") == "reject":
-                print("🛑 Trip was rejected.")
-                break
-            # elif "trip_info" in data:
-            #     print("📨 Driver received the trip request!")
-            #     print(f"Pickup: {data['trip_info']['pickup']}")
-            #     print(f"Destination: {data['trip_info']['destination']}")
-            else:
-                for i in data:
-                    print(f"Driver received the trip request! {data[i]}")
-# Run the passenger simulation
-asyncio.run(passenger_simulation())
+if __name__ == "__main__":
+    # Example URL and headers
+    WS_URL = "ws://localhost:8000/ws/trips/user/request/"
+    headers = [f"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNDk1MTgxLCJpYXQiOjE3NDI0OTE1ODEsImp0aSI6Ijg0ZjgzOGYzY2RkYjRiZTU4NTZiYzJhMzBjMzliYzczIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.iWCW9rFf9s513cXsN5xL1-Tl-O2RrREQraKSFlZbUtc"]
+    
+    # Example payload
+    payload = {
+        "action": "create_trip",
+        "vehicle_type": "Bakkie",
+        "pickup": "21, Jinadu Street, Off E.C.N Bus Stop",
+        "destination": "23, Ogunnaike Street, Adealu Bus Stop",
+        "pickup_lat": 6.614465476614534,
+        "pickup_lon": 3.3110880585889353,
+        "dest_lat": 6.462208135036844,
+        "dest_lon": 3.3362118942921,
+        "load_description": "Two bags of rice"
+    }
+    
+    test_send_and_receive(WS_URL, headers, payload)

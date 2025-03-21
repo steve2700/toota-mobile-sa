@@ -25,7 +25,7 @@ class BaseCustomUserManager(BaseUserManager):
 
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_active', False)  # Require verification by default
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email=email, password=password, **extra_fields)
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
@@ -34,7 +34,7 @@ class BaseCustomUserManager(BaseUserManager):
             raise ValueError(_("Superuser must have is_staff=True."))
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email=email, password=password, **extra_fields)
 
 ###############################################################################
 # Abstract Base Model: Common fields for all user types
@@ -43,7 +43,7 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     """
     Abstract user model that holds fields and methods common to both clients and drivers.
     """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
@@ -111,13 +111,12 @@ class Driver(AbstractCustomUser):
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
     number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
+    # profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     is_available = models.BooleanField(default=True)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 

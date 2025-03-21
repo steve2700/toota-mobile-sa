@@ -1,0 +1,7 @@
+post http://localhost:8000/auth/login/user/
+Content-Type: application/json
+
+{
+    "email": "lekanmojibola@gmail.com",
+    "password": "oladev123"       
+}

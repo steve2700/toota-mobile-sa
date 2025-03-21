@@ -1,46 +1,49 @@
-import asyncio
+import websocket
 import json
-import websockets
+import random
+import time
+from datetime import datetime
 
-# Define the WebSocket server URL (replace with your actual server URL)
-DRIVER_WS_URL = "ws://localhost:8000/ws/trips/driver/location/1aee28fd-0ce7-498d-8150-7cc0f5ef32b3/"
-PASSENGER_WS_URL = "ws://localhost:8000/ws/trips/user/location/1aee28fd-0ce7-498d-8150-7cc0f5ef32b3/"
+# Tokens and WebSocket URLs
+DRIVER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyMTIyNjI5LCJpYXQiOjE3NDIxMTkwMjksImp0aSI6IjRlMzI2M2YyMDkwNDRhMzc4NGU5NjczNjIyMjMzYzUzIiwidXNlcl9pZCI6ImFhZjA3ODAzLTI5MzUtNDllOC04NWZiLTJhY2E5Y2QwNWZmNSJ9.gwH1zpHlwh_5aijWDV1pRDq1fnCNWq0L5vNZeZKn4_c"
+DRIVER_WS_URL = "ws://localhost:8000/ws/trips/driver/location/"
 
-async def driver_simulation():
-    """Simulates a driver sending real-time location updates."""
-    async with websockets.connect(DRIVER_WS_URL) as ws:
-        print("Driver connected!")
-        
-        # Simulate sending location updates every 2 seconds
-        locations = [
-            {"latitude": 12.30, "longitude": 56.75},
-            {"latitude": 12.31, "longitude": 56.76},
-            {"latitude": 12.32, "longitude": 56.77},
-        ]
+def driver_simulation():
+    headers = ["Authorization: Bearer " + DRIVER_TOKEN]
+    
+    while True:
+        try:
+            print(f"[{datetime.now()}] Connecting driver to {DRIVER_WS_URL}")
+            ws = websocket.create_connection(DRIVER_WS_URL, header=headers)
+            print(f"[{datetime.now()}] Driver connected")
 
-        for location in locations:
-            await ws.send(json.dumps(location))
-            print(f"Driver sent location: {location}")
-            await asyncio.sleep(2)  # Wait before sending the next update
+            # Initial location
+            latitude = 7.769137135650247
+            longitude = 4.57368459596944
 
-async def passenger_simulation():
-    """Simulates a passenger receiving real-time driver location updates."""
-    async with websockets.connect(PASSENGER_WS_URL) as ws:
-        print("Passenger connected!")
+            # Send 10 location updates with small random movements
+            for update in range(1, 11):
+                latitude += random.uniform(-0.001, 0.001)
+                longitude += random.uniform(-0.001, 0.001)
+                location = {"latitude": latitude, "longitude": longitude}
+                message = json.dumps(location)
+                ws.send(message)
+                print(f"[{datetime.now()}] Driver sent update {update}: {location}")
+                time.sleep(2)
 
-        while True:
+            ws.close()
+            print(f"[{datetime.now()}] Driver connection closed")
+            # Exit loop if simulation completes successfully
+            break
+
+        except Exception as e:
+            print(f"[{datetime.now()}] Driver connection error: {e}")
             try:
-                response = await ws.recv()  # Receive data from the WebSocket
-                data = json.loads(response)
-                print(f"Passenger received location: {data}")
-            except websockets.exceptions.ConnectionClosed:
-                print("Passenger WebSocket closed.")
-                break
+                ws.close()
+            except Exception:
+                pass
+            print(f"[{datetime.now()}] Retrying connection in 3 seconds...")
+            time.sleep(3)
 
-async def main():
-    """Run driver and passenger simulations concurrently."""
-    await asyncio.gather(driver_simulation(), passenger_simulation())
-
-# Run the test
-asyncio.run(main())
-# websockets.close()
+if __name__ == "__main__":
+    driver_simulation()
