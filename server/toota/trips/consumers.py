@@ -143,12 +143,12 @@ class UserGetLocationConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
-        try:
-            while True:
-                await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to user {self.scope["user"].id}")
-                await sleep(30)  # Ping every 30 seconds
+    """Periodically sends a ping to the client to keep the connection alive."""
+    try:
+        while True:
+            await self.send(text_data=json.dumps({"type": "ping"}))
+            logger.debug(f"Ping sent to user {self.scope['user'].id}")  # FIXED LINE
+            await sleep(30)  # Ping every 30 seconds
         except Exception as e:
             logger.error(f"Ping loop stopped for user {self.scope["user"].id}): {e}")
 
