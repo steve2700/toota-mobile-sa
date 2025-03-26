@@ -143,7 +143,7 @@ class UserGetLocationConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_ping(self):
-    """Periodically sends a ping to the client to keep the connection alive."""
+        """Periodically sends a ping to the client to keep the connection alive."""
     try:
         while True:
             await self.send(text_data=json.dumps({"type": "ping"}))
