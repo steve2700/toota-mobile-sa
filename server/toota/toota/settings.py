@@ -12,12 +12,11 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 CORS_ALLOW_ALL_ORIGINS = True
-
-# ALLOWED_HOSTS = [
-#     'toota-mobile-sa.onrender.com',
-#     '127.0.0.1',
-#     'localhost'
-# ]
+ALLOWED_HOSTS = [
+    'toota-mobile-sa.onrender.com',
+    '127.0.0.1',
+    'localhost'
+]
 
 INSTALLED_APPS = [
     'daphne',  # For ASGI server
