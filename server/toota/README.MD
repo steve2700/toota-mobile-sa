@@ -19,6 +19,19 @@
   - [Real-Time Trip Requests](#real-time-trip-requests)
   - [Real-Time Location Updates](#real-time-location-updates)
   - [Trip Status Updates](#trip-status-updates)
+ [Features and Functionality](#features-and-functionality)
+   - [User Authentication](#user-authentication)
+   - [Driver Management](#driver-management)
+   - [Trip Creation and Management](#trip-creation-and-management)
+   - [Payment Processing](#payment-processing)
+   - [Real-Time Notifications (WebSockets)](#real-time-notifications-websockets)
+   - [Google Maps Integration](#google-maps-integration)
+
+ [Testing](#testing)
+   - [Unit Testing](#unit-testing)
+   - [Integration Testing](#integration-testing)
+   - [WebSocket Testing](#websocket-testing)
+   - [Performance Testing](#performance-testing)
 
 # Toota Backend Server
 
