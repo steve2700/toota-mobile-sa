@@ -199,23 +199,23 @@
             <div class="trip-details">
                 <div class="trip-id">Trip ID: 29bc8f3d-66d7-4aed-9537-010ecea6f3f5</div>
                 <div class="trip-route">Downtown → Airport</div>
-                <div class="trip-fare">₦572.40</div>
+                <div class="trip-fare">₦572.41</div>
                 <div class="trip-status">Pending</div>
             </div>
             <div class="trip-actions">
-                <button class="pay-btn" data-trip-id="29bc8f3d-66d7-4aed-9537-010ecea6f3f5" data-fare="572.40">Pay Now</button>
+                <button class="pay-btn" data-trip-id="29bc8f3d-66d7-4aed-9537-010ecea6f3f5" data-fare="572.41">Pay Now</button>
             </div>
         </div>
 
         <div class="trip-card">
             <div class="trip-details">
-                <div class="trip-id">Trip ID: e73a7b8b-eb71-4f40-bf56-40335902b193</div>
+                <div class="trip-id">Trip ID: 0ed7f12c-6f9d-4db8-882b-5600b00d2864</div>
                 <div class="trip-route">Mall → Home</div>
-                <div class="trip-fare">₦381.60</div>
+                <div class="trip-fare">₦572.40</div>
                 <div class="trip-status">Completed</div>
             </div>
             <div class="trip-actions">
-                <button class="pay-btn" data-trip-id="e73a7b8b-eb71-4f40-bf56-40335902b193" data-fare="381.6">Pay Now</button>
+                <button class="pay-btn" data-trip-id="0ed7f12c-6f9d-4db8-882b-5600b00d2864" data-fare="572.40">Pay Now</button>
             </div>
         </div>
 
@@ -288,7 +288,8 @@
                 const paymentData = {
                     trip_id: selectedTripId,
                     payment_method: paymentMethod,
-                    currency: "NGN"
+                    currency: "NGN",
+                    location: "NG"
                 };
     
                 fetchPaymentLink(paymentData);

@@ -24,23 +24,38 @@ def keep_connection_alive(ws, interval=10):
             break
 
 def test_send_and_receive(url, headers, payload):
-    ws = connect_with_retries(url, headers)
+    ws = websocket.WebSocket()
+    ws.connect(url, header=headers)
+
     try:
         print("[INFO] Sending payload...")
         ws.send(json.dumps(payload))
-        # Wait for response; this may block until the server sends a response.
-        response = ws.recv()
-        print("[INFO] Received response:")
-        print(response)
-    except Exception as e:
-        print(f"[ERROR] Exception during send/receive: {e}")
+
+        while True:
+            response = ws.recv()
+            if response:
+                response_data = json.loads(response)
+
+                # Ignore ping messages
+                if response_data.get("type") == "ping":
+                    print("[INFO] Received ping, keeping connection open...")
+                    continue  
+
+                # Actual response received
+                print("[INFO] Received response:")
+                print(json.dumps(response_data, indent=2))
+                break
+
+    except websocket.WebSocketException as e:
+        print(f"[ERROR] WebSocket error: {e}")
+
     finally:
         ws.close()
-
+        print("[INFO] Connection closed.")
 if __name__ == "__main__":
     # Example URL and headers
     WS_URL = "ws://localhost:8000/ws/trips/user/request/"
-    headers = [f"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNDk1MTgxLCJpYXQiOjE3NDI0OTE1ODEsImp0aSI6Ijg0ZjgzOGYzY2RkYjRiZTU4NTZiYzJhMzBjMzliYzczIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.iWCW9rFf9s513cXsN5xL1-Tl-O2RrREQraKSFlZbUtc"]
+    headers = [f"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzMTA5MjAyLCJpYXQiOjE3NDMxMDU2MDIsImp0aSI6IjdjOGM3OGIwNDJkZTQxMjNiZTU3YzIxMWFkYmIwYjMyIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.t7_t_3TE2J8ppxv05fH1TGXrVXP8-G_7JZN4NRM8QOw"]
     
     # Example payload
     payload = {

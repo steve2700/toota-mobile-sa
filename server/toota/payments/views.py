@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from dotenv import load_dotenv
+import hmac
+import hashlib
 from django.shortcuts import get_object_or_404
 import os
 from trips.models import Trip
@@ -32,7 +34,7 @@ class PaymentView(APIView):
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['trip_id', 'payment_method', 'currency'],
+            required=['trip_id', 'payment_method', 'currency', 'location'],
             properties={
                 'trip_id': openapi.Schema(
                     type=openapi.TYPE_STRING,
@@ -47,6 +49,10 @@ class PaymentView(APIView):
                     type=openapi.TYPE_STRING,
                     description="Currency for the payment (e.g., NGN, ZAR)"
                 ),
+                'location': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="country code (e.g., NG, ZA)"
+                )
             },
             example={
                 "trip_id": 1,
@@ -98,6 +104,7 @@ class PaymentView(APIView):
         trip_id = serializer.validated_data["trip_id"]
         payment_method = serializer.validated_data["payment_method"]
         currency = serializer.validated_data["currency"]
+        location = serializer.validated_data["location"]
 
         trip = get_object_or_404(Trip, id=trip_id)
         amount = trip.accepted_fare
@@ -120,44 +127,67 @@ class PaymentView(APIView):
 
             full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.email
 
-            payment_data = {
-                "tx_ref": transaction_id,
-                "amount": str(amount),
-                "currency": currency,
-                "redirect_url": f"{base_url}/payment/verify/",
-                "meta": {
-                    "trip_id": str(trip_id),
-                    "user_id": str(request.user.id)
-                },
-                "customer": {
-                    "email": request.user.email,
-                    "name": full_name,
-                    "phone_number": str(getattr(request.user, 'phone_number', "")).strip()
-                },
-                "customizations": {
-                    "title": "Trip Payment",
-                    "description": f"Payment for trip #{trip_id}",
-                    "logo": ""
-                }
-            }
 
+            PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+            PAYSTACK_BASE_URL = os.getenv("PAYSTACK_BASE_URL")
             FLUTTERWAVE_BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
             FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
 
-            url = f"{FLUTTERWAVE_BASE_URL}/payments"
-            headers = {
-                "Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}",
-                "Content-Type": "application/json"
-            }
+            if location == "ZAR":
+                url = f"{FLUTTERWAVE_BASE_URL}/payments"
+                payment.gateway = "flutterwave"
+                payment.save()
+                payment_data = {
+                    "tx_ref": transaction_id,
+                    "amount": str(amount),
+                    "currency": currency,
+                    "redirect_url": f"{base_url}/payment/verify/",
+                    "meta": {
+                        "trip_id": str(trip_id),
+                        "user_id": str(request.user.id)
+                    },
+                    "customer": {
+                        "email": request.user.email,
+                        "name": full_name,
+                        "phone_number": str(getattr(request.user, 'phone_number', "")).strip()
+                    },
+                    "customizations": {
+                        "title": "Trip Payment",
+                        "description": f"Payment for trip #{trip_id}",
+                        "logo": ""
+                    }
+                }
+                headers = {
+                    "Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}",
+                    "Content-Type": "application/json"
+                }
+            else:  # Use Paystack for non-NG locations
+                url = f"{PAYSTACK_BASE_URL}/transaction/initialize"
+                payment.gateway = "paystack"
+                payment.save()
+                payment_data = {
+                    "email": request.user.email,
+                    "amount": int(amount) * 100,
+                    "callback_url": f"{base_url}/payment/verify/",
+                    "reference": transaction_id,
+                    "metadata": {
+                        "trip_id": str(trip_id),
+                        "user_id": str(request.user.id)
+                    }
+                }
+                headers = {
+                    "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                    "Content-Type": "application/json"
+                }
 
             try:
                 response = requests.post(url, json=payment_data, headers=headers)
                 res_data = response.json()
 
-                if response.status_code == 200 and res_data.get("status") == "success":
+                if response.status_code == 200 and res_data.get("status") == True:
                     return Response({
                         "message": "Payment initialized successfully",
-                        "payment_link": res_data["data"]["link"],
+                        "payment_link": res_data["data"]["authorization_url"],
                         "transaction_id": transaction_id
                     }, status=status.HTTP_200_OK)
 
@@ -175,6 +205,7 @@ class PaymentView(APIView):
                     "error": "Payment service unavailable",
                     "details": str(e)
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
         else:
             return Response({"error": "Unsupported payment method"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -227,11 +258,11 @@ class VerifyPaymentView(APIView):
     )
     def get(self, request):
         """
-        Handle Flutterwave redirect verification
+        Handle payment verification for both Flutterwave and Paystack.
         """
-        tx_ref = request.GET.get('tx_ref')
-        transaction_id = request.GET.get('transaction_id')
-        status_param = request.GET.get('status')
+        tx_ref = request.GET.get('tx_ref') or request.GET.get('trxref')
+        transaction_id = tx_ref
+        status_param = request.GET.get('status') if request.GET.get('status') else None
 
         if not tx_ref:
             return Response({"error": "Missing transaction reference"}, status=400)
@@ -240,13 +271,14 @@ class VerifyPaymentView(APIView):
             payment = Payment.objects.get(transaction_id=tx_ref)
         except Payment.DoesNotExist:
             return Response({"error": "Invalid transaction reference"}, status=400)
+
         trip_id = payment.trip_id
         try:
             trip = Trip.objects.get(id=trip_id)
         except Trip.DoesNotExist:
             return Response({"error": "Trip not found"}, status=404)
 
-        # If user cancelled
+        # Handle user cancellation
         if status_param == 'cancelled':
             payment.status = 'failed'
             payment.save()
@@ -255,23 +287,30 @@ class VerifyPaymentView(APIView):
                 "message": "Payment not successful",
             }, status=400)
 
-        # Verify payment with Flutterwave
-        FLUTTERWAVE_BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
-        FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
+        # Determine the payment gateway
+        if payment.gateway == "flutterwave":
+            BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
+            SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
+            verify_url = f"{BASE_URL}/transactions/{transaction_id}/verify"
+        elif payment.gateway == "paystack":
+            BASE_URL = os.getenv("PAYSTACK_BASE_URL")
+            SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+            verify_url = f"{BASE_URL}/transaction/verify/{transaction_id}"
+        else:
+            return Response({"error": "Unsupported payment gateway"}, status=400)
 
-        verify_url = f"{FLUTTERWAVE_BASE_URL}/transactions/{transaction_id}/verify"
         headers = {
-            "Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}",
+            "Authorization": f"Bearer {SECRET_KEY}",
             "Content-Type": "application/json"
         }
 
         try:
             response = requests.get(verify_url, headers=headers)
             res_data = response.json()
-
-
-            if response.status_code == 200 and res_data.get("status") == "success":
-                if res_data["data"]["status"] == "successful":
+            print("Paystack Response:", res_data)
+            if response.status_code == 200 and res_data.get("status") in ["success", True]:
+                payment_data = res_data["data"]
+                if payment_data.get("status") in ["successful", "success"]:
                     payment.status = "success"
                     trip.is_paid = True
                     trip.save()
@@ -288,14 +327,7 @@ class VerifyPaymentView(APIView):
                         "trip_id": str(payment.trip_id)
                     }, status=200)
 
-                else:
-                    payment.status = "failed"
-                    payment.save()
-                    return Response({
-                        "status": "failed",
-                        "message": "Payment not successful",
-                    }, status=400)
-
+            # If payment is not successful
             payment.status = "failed"
             payment.save()
             return Response({
@@ -304,12 +336,12 @@ class VerifyPaymentView(APIView):
             }, status=400)
 
         except requests.RequestException as e:
-            payment.status = "failed"
-            payment.save()
             return Response({
                 "status": "failed",
-                "message": "Payment not successful",
-            }, status=400)
+                "message": "Payment verification service unavailable",
+                "details": str(e)
+            }, status=503)
+
 
 
     @swagger_auto_schema(
@@ -373,45 +405,69 @@ class VerifyPaymentView(APIView):
             payment = Payment.objects.get(transaction_id=transaction_id)
         except Payment.DoesNotExist:
             return Response({"error": "Invalid transaction_id"}, status=status.HTTP_400_BAD_REQUEST)
+
         trip_id = payment.trip_id
         try:
             trip = Trip.objects.get(id=trip_id)
         except Trip.DoesNotExist:
             return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
+
         if payment.status == 'success':
             return Response({"message": "Payment already verified as successful"}, status=status.HTTP_200_OK)
 
-        # Verify with Flutterwave
-        FLUTTERWAVE_BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
-        FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
+        payment_gateway = payment.gateway  # Assuming you store the gateway used ("flutterwave" or "paystack")
 
-        verify_url = f"{FLUTTERWAVE_BASE_URL}/transactions/verify_by_reference?tx_ref={transaction_id}"
-        headers = {
-            "Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}",
-            "Content-Type": "application/json"
-        }
+        if payment_gateway == "flutterwave":
+            FLUTTERWAVE_BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
+            FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
+            verify_url = f"{FLUTTERWAVE_BASE_URL}/transactions/verify_by_reference?tx_ref={transaction_id}"
+            headers = {
+                "Authorization": f"Bearer {FLUTTERWAVE_SECRET_KEY}",
+                "Content-Type": "application/json"
+            }
+        elif payment_gateway == "paystack":
+            PAYSTACK_BASE_URL = os.getenv("PAYSTACK_BASE_URL", "https://api.paystack.co")
+            PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+            verify_url = f"{PAYSTACK_BASE_URL}/transaction/verify/{transaction_id}"
+            headers = {
+                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                "Content-Type": "application/json"
+            }
+        else:
+            return Response({"error": "Unknown payment gateway"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             response = requests.get(verify_url, headers=headers)
             res_data = response.json()
 
-            if response.status_code == 200 and res_data.get("status") == "success":
-                if res_data["data"]["status"] == "successful":
+            if response.status_code == 200 and res_data.get("status") in ["success", True]:
+                if payment_gateway == "flutterwave":
+                    payment_status = res_data["data"]["status"]
+                else:  # Paystack
+                    payment_status = res_data["data"]["status"]
+
+                if payment_status in ["successful", "success"]:
                     payment.status = "success"
                     payment.payment_reference = str(res_data["data"].get("id", ""))
                     trip.is_paid = True
                     trip.save()
                     payment.save()
                     return Response({
-                        "status": "failed",
-                        "message": "Payment not successful",
-                    }, status=400)
+                        "status": "success",
+                        "message": "Payment successful",
+                        "transaction_reference": transaction_id,
+                        "payment_reference": payment.payment_reference,
+                        "payment_method": payment.payment_method,
+                        "amount": payment.amount,
+                        "currency": payment.currency,
+                        "trip_id": str(payment.trip_id)
+                    }, status=status.HTTP_200_OK)
 
                 payment.status = "failed"
                 payment.save()
                 return Response({
                     "message": "Payment not successful",
-                    "status": res_data["data"]["status"]
+                    "status": payment_status
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
@@ -488,3 +544,66 @@ def flutterwave_webhook(request):
     # Default response for other event types
     return JsonResponse({"status": "success", "message": "Webhook received"}, status=200)
 
+
+@csrf_exempt
+def paystack_webhook(request):
+    """
+    Webhook endpoint for Paystack payment notifications
+    Set this URL in your Paystack dashboard.
+    """
+    # Get secret key from environment variable
+    PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+
+    # Validate the webhook signature
+    signature = request.headers.get("x-paystack-signature")
+    if not signature:
+        return JsonResponse({"error": "Unauthorized request"}, status=401)
+
+    try:
+        payload = request.body
+        computed_hmac = hmac.new(
+            PAYSTACK_SECRET_KEY.encode("utf-8"),
+            msg=payload,
+            digestmod=hashlib.sha512
+        ).hexdigest()
+
+        if signature != computed_hmac:
+            return JsonResponse({"error": "Invalid signature"}, status=401)
+    except Exception as e:
+        return JsonResponse({"error": "Webhook validation error", "details": str(e)}, status=400)
+
+    # Load webhook data
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    # Log the webhook data
+    print("Received Paystack Webhook:", data)
+
+    event = data.get("event")
+    if event == "charge.success":
+        # Extract transaction details
+        tx_ref = data.get("data", {}).get("reference")
+        status = data.get("data", {}).get("status")
+        paystack_ref = data.get("data", {}).get("id")  # Paystack transaction ID
+
+        if tx_ref and status:
+            payment = get_object_or_404(Payment, transaction_id=tx_ref)
+            trip = get_object_or_404(Trip, id=payment.trip_id)
+
+            # Update payment status
+            if status == "success":
+                payment.status = "success"
+                trip.is_paid = True
+                trip.save()
+                payment.payment_reference = str(paystack_ref)
+                payment.save()
+            elif status in ["failed", "abandoned"]:
+                payment.status = "failed"
+                payment.save()
+
+            return JsonResponse({"status": "success", "message": "Webhook processed"}, status=200)
+
+    # Default response for other event types
+    return JsonResponse({"status": "success", "message": "Webhook received"}, status=200)

@@ -192,6 +192,7 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             action = data.get("action")
         except json.JSONDecodeError:
+            logger.error("Received invalid JSON")
             return
         if action == "create_trip":
             try:
@@ -268,7 +269,7 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                     "available_drivers": available_drivers,
                     "status": "pending"
                 }
-
+                logger.info(f"Sending response: {response_data}") 
                 await self.send(text_data=json.dumps(response_data))
 
             except asyncio.TimeoutError:
