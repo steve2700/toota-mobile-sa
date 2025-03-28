@@ -25,7 +25,8 @@ def keep_connection_alive(ws, interval=10):
 
 def test_send_and_receive(url, headers, payload):
     ws = websocket.WebSocket()
-    ws.connect(url, header=headers)
+
+    ws = connect_with_retries(url, headers)
 
     try:
         print("[INFO] Sending payload...")
@@ -55,7 +56,7 @@ def test_send_and_receive(url, headers, payload):
 if __name__ == "__main__":
     # Example URL and headers
     WS_URL = "ws://localhost:8000/ws/trips/user/request/"
-    headers = [f"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzMTA5MjAyLCJpYXQiOjE3NDMxMDU2MDIsImp0aSI6IjdjOGM3OGIwNDJkZTQxMjNiZTU3YzIxMWFkYmIwYjMyIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.t7_t_3TE2J8ppxv05fH1TGXrVXP8-G_7JZN4NRM8QOw"]
+    headers = [f"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzMTYwNzc2LCJpYXQiOjE3NDMxNTcxNzYsImp0aSI6IjZlOTM4M2ZjNWY0ZDQ1NjdiNjVhMjI2OTBmMjY3ZmMyIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.ELyODrPWrmyl_l8SsdRDmgCoO47IbJn6hXSChCJi1FU"]
     
     # Example payload
     payload = {

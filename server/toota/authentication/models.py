@@ -111,7 +111,6 @@ class Driver(AbstractCustomUser):
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
     car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
     number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    # profile_pic = models.ImageField(upload_to='driver_profile_pics/', blank=True, null=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)

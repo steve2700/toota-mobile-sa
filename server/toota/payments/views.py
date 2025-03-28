@@ -133,7 +133,7 @@ class PaymentView(APIView):
             FLUTTERWAVE_BASE_URL = os.getenv("FLUTTERWAVE_BASE_URL")
             FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
 
-            if location == "ZAR":
+            if location == "NG":
                 url = f"{FLUTTERWAVE_BASE_URL}/payments"
                 payment.gateway = "flutterwave"
                 payment.save()

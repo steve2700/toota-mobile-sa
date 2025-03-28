@@ -11,12 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# CORS_ALLOW_ALL_ORIGINS = True
-ALLOWED_HOSTS = [
-    'toota-mobile-sa.onrender.com',
-    '127.0.0.1',
-    'localhost',
-]
+CORS_ALLOW_ALL_ORIGINS = True
+# ALLOWED_HOSTS = [
+#     'toota-mobile-sa.onrender.com',
+#     '127.0.0.1',
+#     'localhost',
+#     '127.0.0.1:5500'
+# ]
 
 INSTALLED_APPS = [
     'daphne',  # For ASGI server
