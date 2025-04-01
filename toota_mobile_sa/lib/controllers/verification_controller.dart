@@ -11,7 +11,7 @@ class VerificationController {
     required String email,
     required String code,
   }) async {
-    if (code.length != 6) {
+    if (code.length != 4) {
       return {
         'success': false,
         'message': 'Please enter a valid 4-digit code',
