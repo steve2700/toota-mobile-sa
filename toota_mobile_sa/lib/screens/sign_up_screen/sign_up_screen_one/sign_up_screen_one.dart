@@ -106,9 +106,9 @@ class _SignUpOneScreenState extends State<SignUpOneScreen> {
     if (response['statusCode'] == 401) {
       _errorMessage = 'Session expired. Please sign in again.';
       // Optionally navigate back to login
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 10), () {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, RouteNames.login);
+          Navigator.pushReplacementNamed(context, RouteNames.signUp);
         }
       });
     } else {
@@ -133,8 +133,8 @@ class _SignUpOneScreenState extends State<SignUpOneScreen> {
 
     try {
       final response = await _verificationController.verifyEmail(
-        email: widget.email,
-        code: otp,
+        email: widget.email.trim(),
+        otp: otp,
       );
 
       if (mounted) {
@@ -159,9 +159,9 @@ class _SignUpOneScreenState extends State<SignUpOneScreen> {
   void _handleVerificationError(Map<String, dynamic> response) {
     if (response['statusCode'] == 401) {
       _errorMessage = 'Session expired. Please sign in again.';
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 50), () {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, RouteNames.login);
+          Navigator.pushReplacementNamed(context, RouteNames.signUp);
         }
       });
     } else {
@@ -170,17 +170,9 @@ class _SignUpOneScreenState extends State<SignUpOneScreen> {
   }
 
   void _navigateAfterVerification() {
-    switch (widget.source) {
-      case 'signup':
-        Navigator.pushReplacementNamed(context, RouteNames.signUp);
-        break;
-      case 'login':
-        Navigator.pushReplacementNamed(context, RouteNames.login);
-        break;
-      default:
-        Navigator.pop(context);
-    }
-  }
+      Navigator.pushReplacementNamed(context, RouteNames.login);  
+      }
+  
 
   void _handleOtpInput(String value, int index) {
     if (value.length == 1 && index < 3) {

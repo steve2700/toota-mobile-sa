@@ -9,16 +9,16 @@ class VerificationController {
 
   Future<Map<String, dynamic>> verifyEmail({
     required String email,
-    required String code,
+    required String otp,
   }) async {
-    if (code.length != 4) {
+    if (otp.length != 4) {
       return {
         'success': false,
         'message': 'Please enter a valid 4-digit code',
       };
     }
 
-    return await _authService.verifyEmail(email: email, code: code);
+    return await _authService.verifyEmail(email: email, otp: otp);
   }
 
   Future<Map<String, dynamic>> resendOtp({

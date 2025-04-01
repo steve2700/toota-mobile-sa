@@ -19,7 +19,7 @@ Map<String, WidgetBuilder> getAppRoutes() {
     RouteNames.splash: (context) => const SplashScreen(),
     RouteNames.signUpOne: (context) => const SignUpOneScreen(email: '', source: '',),
     RouteNames.signUp: (context) => const SignUpScreen(),
-    RouteNames.login: (context) => const LoginScreen(role: '',),
+    RouteNames.login: (context) => const LoginScreen(),
     RouteNames.role: (context) => const RoleScreen(),
     RouteNames.welcome: (context) => const WelcomeScreen(role: '',),
     RouteNames.onboarding: (context) =>  const OnboardingScreen(),

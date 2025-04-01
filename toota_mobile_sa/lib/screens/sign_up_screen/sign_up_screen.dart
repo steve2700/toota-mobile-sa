@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/controllers/signup_controller.dart';
 import 'package:toota_mobile_sa/constants.dart';
+import 'package:toota_mobile_sa/screens/sign_up_screen/sign_up_screen_one/sign_up_screen_one.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -46,45 +47,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
+  // ... [Previous imports and code remain the same until _signUp method] ...
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+Future<void> _signUp() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    try {
-      await _signUpController.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        onSuccess: () {
-          // Handle successful signup
-          Navigator.pushReplacementNamed(context, RouteNames.signUpOne,arguments: {
-            'email': _emailController.text.trim(),
-            'source': 'signup', // To identify this verification flow
-          },);
-        },
-        
-        onError: (error) {
-          setState(() {
-            _errorMessage = error;
-          });
-        },
-      );
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to connect to server. Please try again.';
-      });
-    } finally {
-      if (mounted) {
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
+
+  try {
+    await _signUpController.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      onSuccess: () {
+        // Navigate to verification screen with email
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SignUpOneScreen(
+              email: _emailController.text.trim(),
+              source: '',
+            ),
+          ),
+        );
+      },
+      onError: (error) {
         setState(() {
-          _isLoading = false;
+          _errorMessage = error;
         });
-      }
+      },
+    );
+  } catch (e) {
+    setState(() {
+      _errorMessage = 'Failed to connect to server. Please try again.';
+    });
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
-
+}
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -135,10 +141,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget _buildLogo(Size size) {
     return Container(
       width: size.width * 0.2,
-      height: size.width * 0.2 * 1.12, // Maintain aspect ratio
+      height: size.width * 0.2 * 0.9, // Maintain aspect ratio
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/icon.png'),
+          image: AssetImage('assets/images/toota_logo.png'),
           fit: BoxFit.contain,
         ),
       ),

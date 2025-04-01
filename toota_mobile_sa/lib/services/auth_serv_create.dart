@@ -58,7 +58,7 @@ class AuthService {
   /// Verify email with OTP code
   Future<Map<String, dynamic>> verifyEmail({
     required String email,
-    required String code,
+    required String otp,
   }) async {
     try {
       final response = await _client.post(
@@ -66,7 +66,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
-          'code': code,
+          'otp': otp,
         }),
       );
       return await _handleResponse(response);
