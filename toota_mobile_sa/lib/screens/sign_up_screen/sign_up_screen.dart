@@ -60,8 +60,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         password: _passwordController.text,
         onSuccess: () {
           // Handle successful signup
-          Navigator.pushReplacementNamed(context, RouteNames.login);
+          Navigator.pushReplacementNamed(context, RouteNames.signUpOne,arguments: {
+            'email': _emailController.text.trim(),
+            'source': 'signup', // To identify this verification flow
+          },);
         },
+        
         onError: (error) {
           setState(() {
             _errorMessage = error;
