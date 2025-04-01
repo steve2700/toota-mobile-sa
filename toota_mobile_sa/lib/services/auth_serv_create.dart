@@ -1,42 +1,40 @@
+// lib/services/auth_service.dart
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AuthService {
-  static Future<Map<String, dynamic>> signUp(String email, String password) async {
+  static const String _baseUrl = 'https://toota-mobile-sa.onrender.com';
+
+  Future<Map<String, dynamic>> signUpUser({
+    required String email,
+    required String password,
+  }) async {
     final response = await http.post(
-      Uri.parse('https://toota-mobile-sa.onrender.com/auth/signup/user/'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{
+      Uri.parse('$_baseUrl/auth/signup/user/'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
         'email': email,
         'password': password,
       }),
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return json.decode(response.body);
     } else {
-      throw Exception('Failed to sign up');
+      throw HttpException(
+        message: json.decode(response.body)['message'] ?? 'Signup failed',
+        statusCode: response.statusCode,
+      );
     }
   }
+}
 
-  static Future<Map<String, dynamic>> signUpDriver(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('https://toota-mobile-sa.onrender.com/auth/signup/driver/'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{
-        'email': email,
-        'password': password,
-      }),
-    );
+class HttpException implements Exception {
+  final String message;
+  final int statusCode;
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to sign up driver');
-    }
-  }
+  HttpException({required this.message, required this.statusCode});
+
+  @override
+  String toString() => message;
 }
