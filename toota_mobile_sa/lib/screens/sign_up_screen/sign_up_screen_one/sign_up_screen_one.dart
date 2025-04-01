@@ -6,12 +6,11 @@ import 'package:toota_mobile_sa/constants.dart';
 
 class SignUpOneScreen extends StatefulWidget {
   final String email;
-  final String source;
+  
   
   const SignUpOneScreen({
     super.key,
     required this.email,
-    required this.source,
   });
 
   @override
@@ -134,7 +133,7 @@ class _SignUpOneScreenState extends State<SignUpOneScreen> {
     try {
       final response = await _verificationController.verifyEmail(
         email: widget.email.trim(),
-        otp: otp,
+        otp: otp.trim(),
       );
 
       if (mounted) {

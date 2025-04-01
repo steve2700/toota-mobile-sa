@@ -17,7 +17,7 @@ import 'package:toota_mobile_sa/screens/KYC/kyc_loading_screen.dart';
 Map<String, WidgetBuilder> getAppRoutes() {
   return {
     RouteNames.splash: (context) => const SplashScreen(),
-    RouteNames.signUpOne: (context) => const SignUpOneScreen(email: '', source: '',),
+    RouteNames.signUpOne: (context) => const SignUpOneScreen(email: ''),
     RouteNames.signUp: (context) => const SignUpScreen(),
     RouteNames.login: (context) => const LoginScreen(),
     RouteNames.role: (context) => const RoleScreen(),

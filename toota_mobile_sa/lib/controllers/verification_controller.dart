@@ -11,12 +11,12 @@ class VerificationController {
     required String email,
     required String otp,
   }) async {
-    if (otp.length != 4) {
-      return {
-        'success': false,
-        'message': 'Please enter a valid 4-digit code',
-      };
-    }
+   if (otp.length != 4 || !otp.contains(RegExp(r'^[0-9]+$'))) {
+    return {
+      'success': false,
+      'message': 'Please enter a valid 4-digit numeric code',
+    };
+  }
 
     return await _authService.verifyEmail(email: email, otp: otp);
   }

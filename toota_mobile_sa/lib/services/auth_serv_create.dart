@@ -1,4 +1,7 @@
 // lib/services/auth_service.dart
+import 'dart:async';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -62,21 +65,30 @@ class AuthService {
   }) async {
     try {
       final response = await _client.post(
-        Uri.parse('$_baseUrl/auth/verify-email/'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-        }),
-      );
+  Uri.parse('$_baseUrl/auth/verify-email/'),
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  body: jsonEncode({
+    'email': email.trim(),
+    'otp': otp.trim(),
+  }),
+);
       return await _handleResponse(response);
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-        'statusCode': 0,
-      };
+    String errorMessage = 'Network error';
+    if (e is SocketException) {
+      errorMessage = 'No internet connection';
+    } else if (e is TimeoutException) {
+      errorMessage = 'Request timed out';
     }
+    return {
+      'success': false,
+      'message': errorMessage,
+      'statusCode': 0,
+    };
+  }
   }
 
   /// Resend OTP to user's email
@@ -84,10 +96,11 @@ class AuthService {
     required String email,
   }) async {
     try {
+      final  trimmed_email = email.trim();
       final response = await _client.post(
         Uri.parse('$_baseUrl/auth/resend-code/'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
+        body: jsonEncode({'email': trimmed_email}),
       );
       return await _handleResponse(response);
     } catch (e) {
