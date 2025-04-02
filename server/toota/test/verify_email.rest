@@ -1,0 +1,7 @@
+post http://localhost:8000/auth/verify-email/
+Content-Type: application/json
+
+{
+    "email": "lekan4jesu@gmail.com",
+    "otp": "6113"
+}

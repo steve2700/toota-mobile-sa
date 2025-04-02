@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideShare - Your Trips</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            color: #4a6cf7;
+            margin: 0;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-email {
+            color: #555;
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: none;
+            color: #4a6cf7;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .trip-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trip-details {
+            flex: 1;
+        }
+
+        .trip-id {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .trip-route {
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .trip-fare {
+            font-weight: bold;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .trip-status {
+            background-color: #e6f7ff;
+            color: #0086f9;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .trip-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pay-btn {
+            background-color: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+
+        .pay-btn:hover {
+            background-color: #3a5dd9;
+        }
+
+        .payment-methods {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .payment-method {
+            margin-bottom: 10px;
+        }
+
+        .payment-method label {
+            margin-left: 8px;
+            color: #555;
+        }
+
+        .submit-payment {
+            background-color: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .payment-processing {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a6cf7;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <h1>Toota</h1>
+        </div>
+        <div class="user-profile">
+            <span class="user-email" id="userEmail"></span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>Your Recent Trips</h2>
+
+        <div class="trip-card">
+            <div class="trip-details">
+                <div class="trip-id">Trip ID: 29bc8f3d-66d7-4aed-9537-010ecea6f3f5</div>
+                <div class="trip-route">Downtown → Airport</div>
+                <div class="trip-fare">₦572.41</div>
+                <div class="trip-status">Pending</div>
+            </div>
+            <div class="trip-actions">
+                <button class="pay-btn" data-trip-id="29bc8f3d-66d7-4aed-9537-010ecea6f3f5" data-fare="572.41">Pay Now</button>
+            </div>
+        </div>
+
+        <div class="trip-card">
+            <div class="trip-details">
+                <div class="trip-id">Trip ID: 5c3d10b6-17b5-4384-aa5c-3fc6c6075dbb</div>
+                <div class="trip-route">Mall → Home</div>
+                <div class="trip-fare">₦381.6</div>
+                <div class="trip-status">Completed</div>
+            </div>
+            <div class="trip-actions">
+                <button class="pay-btn" data-trip-id="5c3d10b6-17b5-4384-aa5c-3fc6c6075dbb" data-fare="381.6">Pay Now</button>
+            </div>
+        </div>
+
+        <div id="paymentMethods" class="payment-methods">
+            <h3>Select Payment Method</h3>
+            <div class="payment-method">
+                <input type="radio" name="paymentMethod" id="card" value="card" checked>
+                <label for="card">Credit/Debit Card</label>
+            </div>
+            <div class="payment-method">
+                <input type="radio" name="paymentMethod" id="mobileMoney" value="mobile_money">
+                <label for="mobileMoney">Mobile Money</label>
+            </div>
+            <div class="payment-method">
+                <input type="radio" name="paymentMethod" id="bankTransfer" value="bank_transfer">
+                <label for="bankTransfer">Bank Transfer</label>
+            </div>
+            <div class="payment-method">
+                <input type="radio" name="paymentMethod" id="cash" value="cash">
+                <label for="cash">Cash</label>
+            </div>
+            <button id="submitPayment" class="submit-payment">Proceed to Payment</button>
+        </div>
+
+        <div id="paymentProcessing" class="payment-processing">
+            <div class="spinner"></div>
+            <p>Processing payment...</p>
+            <p>Please do not close this page.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const isAuthenticated = localStorage.getItem('isAuthenticated');
+            if (!isAuthenticated || isAuthenticated !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+    
+            // Display user email
+            const userEmail = localStorage.getItem('userEmail');
+            document.getElementById('userEmail').textContent = userEmail;
+    
+            // Logout function
+            document.getElementById('logoutBtn').addEventListener('click', function () {
+                localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('authToken'); // Optional: Clear auth token too
+                window.location.href = 'login.html';
+            });
+    
+            const payButtons = document.querySelectorAll('.pay-btn');
+            let selectedTripId = null;
+    
+            payButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    selectedTripId = this.getAttribute('data-trip-id');
+                    document.getElementById('paymentMethods').style.display = 'block';
+                    document.getElementById('paymentMethods').scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+    
+            // Submit payment handler
+            document.getElementById('submitPayment').addEventListener('click', function () {
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    
+                document.getElementById('paymentMethods').style.display = 'none';
+                document.getElementById('paymentProcessing').style.display = 'block';
+    
+                const paymentData = {
+                    trip_id: selectedTripId,
+                    payment_method: paymentMethod,
+                    currency: "ZAR",
+                    location: "ZAR"
+                };
+    
+                fetchPaymentLink(paymentData);
+            });
+    
+            // Function to send payment request to backend
+            function fetchPaymentLink(paymentData) {
+                const authToken = localStorage.getItem('authToken'); // Assuming you store it here
+    
+                if (!authToken) {
+                    alert('Authentication token not found. Please login again.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+    
+                fetch('http://localhost:8000/payment/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(paymentData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('paymentProcessing').style.display = 'none';
+    
+                    if (data.message === "Cash payment selected. Driver will confirm receipt.") {
+                        alert('Cash payment selected. The driver will confirm receipt.');
+                    } else if (data.payment_link) {
+                        // Store transaction_id for verification later if needed
+                        localStorage.setItem('currentTransactionId', data.transaction_id);
+    
+                        // Redirect user to the Flutterwave payment page
+                        window.location.href = data.payment_link;
+                    } else {
+                        alert(data.error || 'Payment initialization failed.');
+                        console.error('Payment Error Details:', data);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('paymentProcessing').style.display = 'none';
+                    console.error('Payment request failed:', error);
+                    alert('Payment service unavailable. Please try again later.');
+                });
+            }
+        });
+    </script>
+    
+</body>
+</html>

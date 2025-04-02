@@ -88,4 +88,3 @@ def is_otp_valid(otp_obj, provided_otp, validity_duration=timedelta(minutes=DEFA
     :return: True if the OTP is correct and not expired, False otherwise.
     """
     return otp_obj.code == provided_otp and (now() - otp_obj.created_at) <= validity_duration
-

@@ -42,4 +42,3 @@ urlpatterns = [
     path('verify-email/', CommonVerifyEmailView.as_view(), name='verify_email'),
     path('resend-code/', ResendVerificationCodeView.as_view(), name='resend_code'),
 ]
-

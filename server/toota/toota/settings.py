@@ -3,6 +3,7 @@ from datetime import timedelta
 from decouple import config
 import dj_database_url
 import cloudinary
+# from rest_framework_simplejwt.settings import api_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,13 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = [
-    'toota-mobile-sa.onrender.com',
-    '127.0.0.1',
-    'localhost'
+    'toota-mobile-sa.onrender.com',  # Production domain
+    '127.0.0.1',                     # Local IPv4
+    'localhost',                      # Localhost
 ]
 
-# Consolidated INSTALLED_APPS list
 INSTALLED_APPS = [
     'daphne',  # For ASGI server
     'channels',  # For WebSocket support
@@ -33,13 +34,13 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'phonenumber_field',
-    'django_extensions',
     'authentication',  # Custom auth app
     'trips',  # Your trips app
+    'payments',  # Your payments app
 ]
 
-AUTH_USER_MODEL = 'authentication.User'
-AUTH_DRIVER_MODEL = 'authentication.Driver'
+# No single AUTH_USER_MODEL since we handle User and Driver separately
+AUTH_USER_MODEL = 'authentication.User'  # Comment out or remove
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Must be first
@@ -51,7 +52,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'toota.urls'
 
 TEMPLATES = [
@@ -70,16 +71,6 @@ TEMPLATES = [
     },
 ]
 
-# Consolidated REST_FRAMEWORK settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-}
-
 WSGI_APPLICATION = 'toota.wsgi.application'
 ASGI_APPLICATION = 'toota.asgi.application'
 
@@ -92,20 +83,45 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',  # Matches your UUIDField
+    'USER_ID_CLAIM': 'user_id',  # Claim name in JWT
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
 }
 
-# Cloudinary settings (consolidated)
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'authentication.auth.CustomJWTAuthentication',  # Custom class
+    ),
+        'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    # ... other settings ...
+}
+
+# Cloudinary settings
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME'),
     api_key=config('CLOUDINARY_API_KEY'),
@@ -116,9 +132,9 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Database settings
 DATABASES = {
-    "default": dj_database_url.config(
+    'default': dj_database_url.config(
         default=config('DATABASE_URL'),
-        conn_max_age=600,
+        conn_max_age=0,
         ssl_require=True
     )
 }
@@ -131,7 +147,6 @@ SWAGGER_SETTINGS = {
             'in': 'header',
         },
     },
-    'USE_SESSION_AUTH': False,
 }
 
 DIRECT_URL = config('DIRECT_URL')
@@ -144,7 +159,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Channels settings
+# Channels settings (single definition)
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For local testing
@@ -162,6 +177,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
@@ -169,11 +185,13 @@ CORS_ALLOWED_ORIGINS = [
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
 ]
+
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'https://toota-mobile-sa.onrender.com',
     'http://127.0.0.1:8000',
+    'https://3dec-102-89-85-67.ngrok-free.app',
 ]
 
 # Logging for debugging

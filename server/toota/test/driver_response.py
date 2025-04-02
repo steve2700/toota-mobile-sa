@@ -1,68 +1,126 @@
-import asyncio
-import websockets
+import websocket
+import time
 import json
-import sys, os
-from channels.db import database_sync_to_async
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'toota.settings')
+import sys
+import threading
 
-# Import Django and set up the environment
-import django
-django.setup()
-from authentication.models import User
+# --- Configuration ---
+ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzMTYxMTUwLCJpYXQiOjE3NDMxNTc1NTAsImp0aSI6ImFiNjAyN2FjMjFjMjRjMDI5ZjlkMjUxMzk2OTRkODFiIiwidXNlcl9pZCI6ImFhZjA3ODAzLTI5MzUtNDllOC04NWZiLTJhY2E5Y2QwNWZmNSJ9.uo8_Ltz-dWBXKIz97j16Dhyot8Uxo4nJ5mB-je5144w"
+WS_URL = f"ws://localhost:8000/ws/trips/driver/response/"
+RECONNECT_DELAY = 5  # seconds before retrying to connect
 
-# Driver details
-DRIVER_ID = "1aee28fd-0ce7-498d-8150-7cc0f5ef32b3"   # Change this to the assigned driver ID
-WS_URL = f"ws://localhost:8000/ws/trips/driver/response/{DRIVER_ID}/"  # WebSocket URL
+# === Utility Functions ===
+def print_json(data, title=None):
+    if title:
+        print(f"{title}")
+    print(json.dumps(data, indent=2))
 
-async def driver_simulation():
-    async with websockets.connect(WS_URL) as websocket:
-        print("✅ Connected to WebSocket as Driver")
+# === WebSocket Event Handlers ===
+def on_open(ws):
+    print("[INFO] Connection opened.")
 
-        while True:
-            print("\n🚦 Waiting for a trip request...")
-            
-            # Receive a trip request from a passenger
-            request = await websocket.recv()
-            data = json.loads(request)
+def on_message(ws, message):
+    try:
+        notif_data = json.loads(message)
+        print_json(notif_data, "\n[INFO] Received notification:")
 
-            if data.get("status") == "cancelled":
-                print(f"❌ Trip was cancelled by passenger {data['user_id']}")
-                continue
+        if notif_data.get("type") == "new_trip_request":
+            handle_trip_request(ws, notif_data)
+        else:
+            print(f"[WARN] Unexpected message type: {notif_data.get('type')}")
 
-            if "trip_info" in data:
-                user = await get_user(data["user_id"])
-                print(f"{user.first_name} {user.last_name} is requesting for a trip")
-                print("\n🚖 New Trip Request Received!")
-                print(f"📍 Pickup: {data['trip_info']['pickup']}")
-                print(f"🎯 Destination: {data['trip_info']['destination']}")
-                print(f"🧳 Load Description: {data['trip_info']['load_description']}")
+    except json.JSONDecodeError:
+        print(f"[ERROR] Failed to decode server message: {message}")
 
-                action = input("\nEnter 'accept' to accept trip, 'reject' to reject: ").strip().lower()
+def on_error(ws, error):
+    print(f"[ERROR] WebSocket error: {error}")
 
-                if action == "accept":
-                    response_data = {
-                        "user_id": data["user_id"],
-                        "trip_response_status": "accepted",
-                        "trip_info": data["trip_info"]
-                    }
-                    await websocket.send(json.dumps(response_data))
-                    print("✅ Trip accepted! Notifying passenger...")
+def on_close(ws, close_status_code, close_msg):
+    print(f"[INFO] Connection closed: {close_status_code} - {close_msg}")
 
-                elif action == "reject":
-                    response_data = {
-                        "user_id": data["user_id"],
-                        "trip_response_status": "rejected"
-                    }
-                    await websocket.send(json.dumps(response_data))
-                    print("❌ Trip rejected! Notifying passenger...")
+# === Handle Trip Request Logic ===
+def handle_trip_request(ws, notif_data):
+    trip_details = notif_data.get("trip_details", {})
+    trip_id = trip_details.get("trip_id")
 
-                else:
-                    print("⚠️ Invalid input. Please enter 'accept' or 'reject'.")
+    # === Present trip details ===
+    user_info = trip_details.get("user_info", {})
+    print("\n=== USER DETAILS ===")
+    print(f"Name: {user_info.get('name', 'N/A')}")
+    print(f"Phone: {user_info.get('phone', 'N/A')}")
 
-@database_sync_to_async
-def get_user(user_id):
-    return User.objects.get(id=user_id)
+    print("\n=== TRIP REQUEST SUMMARY ===")
+    print(f"Trip ID: {trip_id}")
+    print(f"Pickup: {trip_details.get('pickup', 'Unknown')}")
+    print(f"Destination: {trip_details.get('destination', 'Unknown')}")
+    print(f"Fare: {trip_details.get('payment_info', {}).get('amount', 'N/A')} NGN")
+    print(f"Distance: {trip_details.get('distance_km', 'N/A')} km")
+    print(f"Est. Time: {trip_details.get('estimated_time', 'N/A')}")
+    print(f"Vehicle Type: {trip_details.get('vehicle_type', 'N/A')}")
+    print(f"Load Description: {trip_details.get('load_description', 'None')}")
 
-# Run the driver simulation
-asyncio.run(driver_simulation())
+    print("\n=== DRIVER RESPONSE OPTIONS ===")
+    print("1. Accept Trip")
+    print("2. Reject Trip")
+    print("3. View Trip Details Again")
+
+    while True:
+        choice = input("\nEnter your choice (1-3): ").strip()
+
+        if choice == "1":
+            decision = "accepted"
+            break
+        elif choice == "2":
+            decision = "rejected"
+            break
+        elif choice == "3":
+            print_json(notif_data, "Trip Request Details:")
+        else:
+            print("[ERROR] Invalid choice. Please enter a number between 1-3.")
+
+    message = {
+        "trip_id": trip_id,
+        "driver_response_status": decision
+    }
+
+    print("\n[INFO] Sending driver response message:")
+    print_json(message, "Driver Response Payload:")
+
+    try:
+        ws.send(json.dumps(message))
+        print("[INFO] Driver response sent.")
+    except Exception as e:
+        print(f"[ERROR] Failed to send response: {e}")
+
+# === Main Simulation Loop with Retry ===
+def simulate_driver_response():
+    headers = [f"Authorization: Bearer {ACCESS_TOKEN}"]
+
+    while True:
+        print("=== DRIVER TRIP RESPONSE SIMULATION ===")
+        print(f"[INFO] Connecting to DriverTripConsumer at {WS_URL}")
+
+        ws_app = websocket.WebSocketApp(
+            WS_URL,
+            header=headers,
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close
+        )
+
+        try:
+            # Run forever with ping/pong automatically handled
+            ws_app.run_forever(ping_interval=20, ping_timeout=10)
+        except KeyboardInterrupt:
+            print("\n[INFO] KeyboardInterrupt detected. Exiting simulator.")
+            break
+        except Exception as e:
+            print(f"[ERROR] WebSocketApp encountered an exception: {e}")
+
+        # Wait before retrying connection
+        print(f"[INFO] Reconnecting in {RECONNECT_DELAY} seconds...\n")
+        time.sleep(RECONNECT_DELAY)
+
+if __name__ == "__main__":
+    simulate_driver_response()
