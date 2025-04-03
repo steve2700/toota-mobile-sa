@@ -5,7 +5,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
 # Use the production URL as the default for Swagger
-swagger_url = "http://127.0.0.1:8000"
+swagger_url = "https://toota-mobile-sa.onrender.com/swagger/"
 
 # Define the schema view for Swagger UI
 schema_view = get_schema_view(
