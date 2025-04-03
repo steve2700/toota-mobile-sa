@@ -28,12 +28,15 @@ class BaseSignupSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Dynamically set the UniqueValidator based on the model in Meta.
         if self.Meta.model:
             self.fields['email'].validators = [
                 UniqueValidator(queryset=self.Meta.model.objects.all(), message="This email is already in use.")
             ]
 
     def create(self, validated_data):
+        # Delegate creation to the model's custom manager's create_user method.
         return self.Meta.model.objects.create_user(**validated_data)
 
 class BaseLoginSerializer(serializers.Serializer):
@@ -72,7 +75,7 @@ class UserSignupSerializer(BaseSignupSerializer):
 class UserLoginSerializer(BaseLoginSerializer):
     """
     Serializer for user login.
-    Validates email and password directly against the User model.
+    Validates that the authenticated user is a User instance.
     """
     def validate(self, data):
         email = data.get('email')
@@ -130,14 +133,18 @@ class KYCUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_phone_number(self, value):
+        # The PhoneNumberField does its own validation; you can add additional checks if desired.
         if len(str(value)) < 10 or len(str(value)) > 15:
             raise serializers.ValidationError("Phone number must be between 10 and 15 digits.")
         return value
 
     def validate_profile_pic(self, value):
+        # Limit profile picture size to 2 MB and ensure it's JPEG or PNG.
         max_size_mb = 2
         if value.size > max_size_mb * 1024 * 1024:
             raise serializers.ValidationError(f"Profile picture size must not exceed {max_size_mb} MB.")
+        
+        # Check file extension
         allowed_extensions = ['jpg', 'jpeg', 'png']
         ext = value.name.split('.')[-1].lower()
         if ext not in allowed_extensions:
@@ -185,7 +192,6 @@ class EmailVerificationSerializer(serializers.Serializer):
 class ResendOTPSerializer(serializers.Serializer):
     """
     Serializer for resending an OTP.
-    Only requires the user's email.
+    Only requires the users email.
     """
     email = serializers.EmailField()
-    
