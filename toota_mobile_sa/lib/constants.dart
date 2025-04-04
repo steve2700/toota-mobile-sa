@@ -19,4 +19,12 @@ class RouteNames {
   static const String onboarding = '/onboarding';
   static const String kycone = '/kycone';
   static const String kyctwo = '/kyctwo';
+  static const String signUpOne = '/otp';
+  static const String signUp = '/signUp';
+  static const String login = '/login';
+  static const String dashboard = '/dashboard';
+  static const String tripdetails = '/trip';
+  static const String routeselection = '/route';
+  static const String kycloading = '/kycloading';
+  static const String searchlocation = '/search';
 }

@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../widgets/animated_loader.dart';
-
-class KycLoadingScreen extends StatelessWidget {
+import 'kyc_screen_one.dart';
+class KycLoadingScreen extends StatefulWidget {
   const KycLoadingScreen({super.key});
 
+  @override
+  __KycLoadingScreenState createState() => __KycLoadingScreenState();
+ }
+ class __KycLoadingScreenState extends State<KycLoadingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 10), () {
+      Navigator.pushReplacement(context,  MaterialPageRoute(builder: (context) => const KycScreenOne()));
+    });
+  }
   @override
   Widget build(BuildContext context) {
     // Get screen dimensions
@@ -66,4 +77,4 @@ class KycLoadingScreen extends StatelessWidget {
       ),
     );
   }
-}
+ }

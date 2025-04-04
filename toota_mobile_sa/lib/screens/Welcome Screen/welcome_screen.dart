@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:toota_mobile_sa/constants.dart';
 import 'components/arrow_back.dart';
 import 'components/welcome_content.dart';
 import 'components/custom_button.dart';
 import 'components/divider_row.dart';
 import 'components/social_button.dart';
 import 'components/already_have_account_button.dart';
+import 'package:toota_mobile_sa/constants.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  final String role;
+
+  const WelcomeScreen({super.key, required this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,7 @@ class WelcomeScreen extends StatelessWidget {
         ),
         const ArrowBack(),
         Positioned(
-          bottom: -60, // Moves the ellipse down by 50 pixels
+          bottom: -60, // Moves the ellipse down by 60 pixels
           left: 0,
           right: 0,
           child: Image.asset(
@@ -51,8 +53,7 @@ class WelcomeScreen extends StatelessWidget {
                   containerWidth: containerWidth,
                   label: "Create an account",
                   function: () {
-                    Navigator.pushReplacementNamed(
-                        context, RouteNames.onboarding);
+                   Navigator.pushNamed(context, RouteNames.onboarding);
                   },
                 ),
                 const DividerRow(),

@@ -90,6 +90,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         );
                       } else {
                         // Navigate to sign-up page or perform another action
+                        Navigator.pushNamed(context, RouteNames.signUp);
                       }
                     }),
               ],

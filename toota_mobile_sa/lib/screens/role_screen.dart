@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
-
+import 'package:toota_mobile_sa/screens/Welcome Screen/welcome_screen.dart';
 import '../../widgets/box_shadow.dart';
 
 class RoleScreen extends StatefulWidget {
@@ -176,8 +176,15 @@ class _RoleScreenState extends State<RoleScreen> {
                 onPressed: selectedRole == null
                     ? null // Disable button if no role is selected
                     : () {
-                        // Navigate or perform actions
-                        Navigator.pushNamed(context, RouteNames.welcome);
+                        // Navigate to WelcomeScreen with the selected role
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WelcomeScreen(
+                              role: selectedRole!,
+                            ),
+                          ),
+                        );
                       },
                 child: const Text(
                   "Continue",
@@ -193,6 +200,7 @@ class _RoleScreenState extends State<RoleScreen> {
               TextButton(
                 style: TextButton.styleFrom(overlayColor: Colors.transparent),
                 onPressed: () {
+                  Navigator.pushNamed(context, RouteNames.login);
                   // Handle "I already have an account" action
                 },
                 child: const Text(

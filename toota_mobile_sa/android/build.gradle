@@ -2,15 +2,25 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
+        maven { url 'https://plugins.gradle.org/m2/' }
+        jcenter()
     }
 }
 
+
 rootProject.buildDir = "../build"
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
 subprojects {
-    project.evaluationDependsOn(":app")
+    afterEvaluate { subproject ->
+        if (subproject.name == 'app') {
+            subproject.evaluationDependsOnChildren()
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
