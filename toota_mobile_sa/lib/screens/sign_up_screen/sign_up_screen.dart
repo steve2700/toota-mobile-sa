@@ -428,7 +428,7 @@ Future<void> _signUp() async {
             : Text(
                 'Sign Up',
                 style: _textStyle(
-                  color: Colors.black,
+                 color:  const Color(0xFFFEF5E8),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
