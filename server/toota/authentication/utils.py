@@ -88,3 +88,25 @@ def is_otp_valid(otp_obj, provided_otp, validity_duration=timedelta(minutes=DEFA
     :return: True if the OTP is correct and not expired, False otherwise.
     """
     return otp_obj.code == provided_otp and (now() - otp_obj.created_at) <= validity_duration
+
+
+def send_kyc_submission_email(driver_email):
+    """
+    Send an email to the driver after they complete the KYC process.
+    Informs the driver that the admin team will review their details.
+    """
+    subject = "Driver KYC Application Submitted"
+    message = (
+        f"Dear Driver,\n\n"
+        f"Thank you for submitting your KYC details. Our admin team is currently reviewing your application.\n\n"
+        "You will be notified once the review process is complete.\n\n"
+        "Thank you for using our platform!"
+    )
+
+    try:
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [driver_email])
+    except Exception as e:
+        # Log the error if sending the email fails
+        print(f"Error sending email to {driver_email}: {e}")
+        return False
+    return True

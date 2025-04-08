@@ -24,7 +24,8 @@ from .serializers import (
     UserProfileSerializer,
     DriverSignupSerializer,
     DriverLoginSerializer,
-    KYCUpdateSerializer
+    KYCUpdateSerializer,
+    DriverKYCUpdateSerializer
 )
 from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email 
 logger = logging.getLogger(__name__)
@@ -617,4 +618,6 @@ class KYCUpdateView(generics.UpdateAPIView):
             serializer.save()
             return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 

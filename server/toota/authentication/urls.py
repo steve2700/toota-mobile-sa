@@ -35,6 +35,7 @@ urlpatterns = [
     path('login/driver/', DriverLoginView.as_view(), name='login_driver'),
     path('forgot-password/driver/', DriverForgotPasswordView.as_view(), name='forgot_password_driver'),
     path('reset-password/driver/', DriverResetPasswordView.as_view(), name='reset_password_driver'),
+    path('driver/kyc/update/', DriverKYCUpdateView.as_view(), name='driver-kyc-update'),
     
     # Common endpoints
     path('logout/', LogoutView.as_view(), name='logout'),
