@@ -12,7 +12,10 @@ def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, limit=20):
     Find a list of available drivers near the given pickup location.
     Uses geopy to calculate real distances.
     """
-    available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)  # Get available drivers
+    if not vehicle_type:
+        available_drivers = Driver.objects.filter(is_available=True)  # Get all available drivers
+    else:
+        available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)  # Get available drivers
     drivers_list = []
     pickup_location = (float(pickup_lat), float(pickup_lon))
 

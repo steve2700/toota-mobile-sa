@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from asgiref.sync import sync_to_async
+from channels.layers import get_channel_layer
 import re
 from asyncio import sleep, create_task
 import asyncio
@@ -55,8 +56,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             # Ensure message is serializable
             message = {
                 "type": "driver_location_update",
-                "latitude": latitude,
-                "longitude": longitude,
                 "driver_details": driver_info
             }
             await self.channel_layer.group_send(self.room_group_name, message)
@@ -72,8 +71,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
     async def driver_location_update(self, event):
         await self.send(
             text_data=json.dumps({
-                "latitude": event["latitude"],
-                "longitude": event["longitude"],
                 "driver_details": event["driver_details"]
             })
         )
@@ -105,6 +102,8 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             "phone": str(driver.phone_number),
             "vehicle_type": driver.vehicle_type,
             "rating": float(driver.rating),
+            "latitude": driver.latitude,
+            "longitude": driver.longitude,
             "is_available": driver.is_available,
             "profile_pic": driver.profile_pic.url if driver.profile_pic else None,
             "car_image": driver.car_images.url if driver.car_images else None,
@@ -134,10 +133,16 @@ class UserGetLocationConsumer(AsyncWebsocketConsumer):
         raise StopConsumer()
 
     async def driver_location_update(self, event):
+        driver_details = event["driver_details"]
+        await self.channel_layer.group_send(
+            "user_{}".format(self.scope["user"].id),
+            {
+                "type": "send_driver_location",
+                "driver_details": driver_details
+            }
+        )
         await self.send(
             text_data=json.dumps({
-                "latitude": event["latitude"],
-                "longitude": event["longitude"],
                 "driver_details": event["driver_details"]
             })
         )
@@ -192,7 +197,6 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             action = data.get("action")
         except json.JSONDecodeError:
-            logger.error("Received invalid JSON")
             return
         if action == "create_trip":
             try:
@@ -553,8 +557,6 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
-
-            # Handle pong (response to ping)
         except json.JSONDecodeError:
             return
 
@@ -752,7 +754,10 @@ class DriverUpdateTripStatusConsumer(AsyncWebsocketConsumer):
         raise StopConsumer()
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            return
         self.trip = await self.get_trip(self.trip_id)
         if self.trip is None:
             await self.send(text_data=json.dumps({
@@ -833,52 +838,98 @@ class DriverUpdateTripStatusConsumer(AsyncWebsocketConsumer):
             logger.error(f"Ping loop stopped for driver {self.scope['user'].id}: {e}")
 
 
-class UserGetTripStatusConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        self.trip_id = self.scope['url_route']['kwargs']['trip_id']
-        if self.scope["user"].is_authenticated and await self.is_user(self.scope["user"]):
-            self.trip_group_name = f"trip_{self.trip_id}"
-            await self.channel_layer.group_add(
-                self.trip_group_name,
-                self.channel_name
-            )
-            await self.accept()
-            logger.info("User connection accepted")
-            self.ping_task = create_task(self.send_ping())
 
-        else:
-            logger.warning("User connection rejected")
-            await self.close(code=4403)
+class UserGetAvailableDrivers(AsyncWebsocketConsumer):
+    """Handles requests for available drivers in real-time."""
+
+    async def connect(self):
+        try:
+            if self.scope["user"].is_authenticated and await self.is_user(self.scope['user']):
+                self.user = self.scope.get("user")
+                self.user_id = self.user.id
+                self.user_group_name = f"user_{self.user_id}"
+                await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+                await self.accept()
+                logger.info(f"{self.user} connection accepted")
+                self.ping_task = create_task(self.send_ping())
+            else:
+                logger.warning("User connection rejected")
+                await self.close(code=4403)
+        except Exception as e:
+            logger.error(f"Error during connect: {e}", exc_info=True)
+            await self.close()
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'trip_group_name'):
-            await self.channel_layer.group_discard(self.trip_group_name, self.channel_name)
-            logger.info(f"User disconnected with code: {close_code}")
+        if hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+        logger.info(f"User disconnected with code: {close_code}")
         if hasattr(self, 'ping_task'):
             self.ping_task.cancel()
         raise StopConsumer()
 
     async def receive(self, text_data):
-        # User doesn't need to send anything (optional)
-        pass
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            logger.warning("Invalid JSON received.")
+            return
 
-    async def trip_payment_update(self, event):
-        payment_status = event['payment_status']
-        trip_id = event['trip_id']
+        user_latitude = data.get('user_latitude')
+        user_longitude = data.get('user_longitude')
+        self.user_location = (user_latitude, user_longitude)
+        vehicle_type = data.get('vehicle_type', [])
+
+        if not user_latitude or not user_longitude:
+            await self.send(text_data=json.dumps({
+                "type": "error",
+                "message": "Missing user location."
+            }))
+            return
+
+        drivers = await sync_to_async(find_nearest_drivers)(user_latitude, user_longitude, vehicle_type)
+        if not drivers:
+            await self.send(text_data=json.dumps({
+                "type": "nearest_drivers",
+                "drivers": []
+            }))
+        else:
+            nearest_drivers = []
+            for driver in drivers:
+                route_data = await asyncio.wait_for(
+                    database_sync_to_async(get_route_data)(user_latitude, user_longitude, driver.latitude, driver.longitude),
+                    timeout=10
+                )
+                nearest_drivers.append([driver, route_data])
+            await self.send(text_data=json.dumps({
+                "type": "nearest_drivers",
+                "nearest_drivers": nearest_drivers
+            }))
+
+
+    async def send_driver_location(self, event):
+        if not hasattr(self, 'user_location'):
+            return
+
+        user_lat, user_lon = self.user_location
+        vehicle_type = [] 
+
+        drivers = await sync_to_async(find_nearest_drivers)(
+            user_lat, user_lon, vehicle_type
+        )
+
+        nearest_drivers = []
+        for driver in drivers:
+            route_data = await asyncio.wait_for(
+                database_sync_to_async(get_route_data)(
+                    user_lat, user_lon, driver.latitude, driver.longitude
+                ),
+                timeout=10
+            )
+            nearest_drivers.append([driver, route_data])
+
         await self.send(text_data=json.dumps({
-            "payment_status": payment_status,
-            "trip_id": trip_id,
-            "message": "You must make payment before trip starts"
-        }))
-
-    # Receive broadcast from the driver
-    async def trip_status_update(self, event):
-        status = event['trip_status']
-        trip_id = event['trip_id']
-
-        await self.send(text_data=json.dumps({
-            'trip_id': trip_id,
-            'trip_status': status
+            "type": "nearest_drivers",
+            "nearest_drivers": nearest_drivers
         }))
 
     @database_sync_to_async
@@ -886,11 +937,10 @@ class UserGetTripStatusConsumer(AsyncWebsocketConsumer):
         return User.objects.filter(id=user.id).exists()
 
     async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
+        """Keeps the socket alive by sending periodic pings."""
         try:
             while True:
                 await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to user {self.scope['user'].id}")
-                await sleep(30)  # Ping every 30 seconds
+                await sleep(30)
         except Exception as e:
-            logger.error(f"Ping loop stopped for user {self.scope['user'].id}: {e}")
+            logger.error(f"Ping loop stopped: {e}")

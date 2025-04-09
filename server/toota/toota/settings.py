@@ -31,8 +31,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # Replacing rest_framework.authtoken
     'drf_yasg',
     'corsheaders',
-    'cloudinary_storage',
-    'cloudinary',
     'phonenumber_field',
     'authentication',  # Custom auth app
     'trips',  # Your trips app
@@ -40,7 +38,7 @@ INSTALLED_APPS = [
 ]
 
 # No single AUTH_USER_MODEL since we handle User and Driver separately
-AUTH_USER_MODEL = 'authentication.User'  # Comment out or remove
+AUTH_USER_MODEL = 'authentication.User' 
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Must be first
@@ -52,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'toota.urls'
 
@@ -162,12 +161,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Channels settings (single definition)
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For local testing
-        # Uncomment for production with Redis:
-        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        # 'CONFIG': {
-        #     'hosts': [('127.0.0.1', 6379)],
-        # },
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
 
