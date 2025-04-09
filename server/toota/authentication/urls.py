@@ -13,6 +13,7 @@ from .views import (
     DriverLoginView,
     DriverForgotPasswordView,
     DriverResetPasswordView,
+    DriverKYCUpdateView,
     
     # Common endpoints for both users and drivers
     LogoutView,
