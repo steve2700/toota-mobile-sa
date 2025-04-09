@@ -1,87 +1,76 @@
+import asyncio
 import json
-import websocket
-import time
-import sys
+import websockets
+from websockets.exceptions import ConnectionClosedError
 
-WS_URL = "ws://localhost:8000/ws/trips/drivers/"
-USER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ0MTg1NTA3LCJpYXQiOjE3NDQxODE5MDcsImp0aSI6ImFhYmE2MzE1MTBlMDQ2NWZiMjdjNDU2YmQ3MjM4MjcyIiwidXNlcl9pZCI6IjUwMWEwZjE5LTM2ZGEtNGY4OC05MjVjLWE3YjBkY2RiMDU3OSJ9.7rTkJCaYuhbZNCundSdzu273svs-XGhPh6PPMcIJkC8"
-TRIP_ID = "5c3d10b6-17b5-4384-aa5c-3fc6c6075dbb"
-DRIVER_ID = "aaf07803-2935-49e8-85fb-2aca9cd05ff5"
+# Test configuration
+WEBSOCKET_URL = "ws://127.0.0.1:8000/ws/trips/drivers/all/"
+BEARER_TOKEN = "your_bearer_token_here"  # Replace with a valid token
+RETRY_LIMIT = 5
+RETRY_DELAY = 2  # seconds
 
-# === WebSocket Event Handlers ===
+async def test_user_get_available_drivers():
+    headers = [("Authorization", f"Bearer {BEARER_TOKEN}")]
+    retries = 0
 
-def on_open(ws):
-    print("[INFO] WebSocket connection opened. Sending user location...")
-
-    data = {
-        "latitude": 6.615230170469972,
-        "longitude": 3.313137604514678
-    }
-    print(data)
-
-    ws.send(json.dumps(data))
-
-
-def on_message(ws, message):
-
-    print("[MESSAGE RECEIVED]")
-    try:
-        data = json.loads(message)
-        print(data)
-    #     if data.type == "ping":
-    #         pass
-    #     elif data.type == "available_drivers":
-    #         print(json.dumps(data, indent=2))
-    except json.JSONDecodeError:
-        print(f"[RAW MESSAGE]: {message}")
-
-
-def on_error(ws, error):
-    print(f"[ERROR] {error}")
-
-
-def on_close(ws, close_status_code, close_msg):
-    print(f"[INFO] Connection closed. Code: {close_status_code}, Message: {close_msg}")
-
-
-# === WebSocket Connection with Retry Logic ===
-
-def connect_with_retries(max_retries=5, base_delay=2):
-    headers = [f"Authorization: Bearer {USER_TOKEN}"]
-
-    retry_count = 0
-
-    while True:
-        print(f"\n[INFO] Attempting to connect to WebSocket (Attempt {retry_count + 1}/{max_retries})...")
-        ws_app = websocket.WebSocketApp(
-            WS_URL,
-            header=headers,
-            on_open=on_open,
-            on_message=on_message,
-            on_error=on_error,
-            on_close=on_close
-        )
-
+    while retries < RETRY_LIMIT:
         try:
-            # Blocking call. Runs until closed or error.
-            ws_app.run_forever(ping_interval=20, ping_timeout=10)
-        except KeyboardInterrupt:
-            print("\n[INFO] Keyboard interrupt detected. Exiting.")
-            sys.exit(0)
-        except Exception as e:
-            print(f"[ERROR] Exception occurred: {e}")
+            # Connect to the WebSocket
+            async with websockets.connect(WEBSOCKET_URL, extra_headers=headers) as websocket:
+                print("Connected to WebSocket.")
 
-        retry_count += 1
+                # Send a valid payload to request available drivers
+                request_payload = {
+                    "user_latitude": 6.5244,
+                    "user_longitude": 3.3792,
+                }
+                await websocket.send(json.dumps(request_payload))
+                print(f"Sent payload: {request_payload}")
 
-        if retry_count >= max_retries:
-            print(f"[ERROR] Maximum retries ({max_retries}) reached. Giving up.")
-            break
+                while True:
+                    try:
+                        # Receive messages from the WebSocket
+                        response = await websocket.recv()
+                        response_data = json.loads(response)
 
-        # Exponential backoff delay
-        delay = base_delay * (2 ** (retry_count - 1))
-        print(f"[INFO] Reconnecting in {delay} seconds...")
-        time.sleep(delay)
+                        # Handle ping messages
+                        if response_data.get("type") == "ping":
+                            print("Received ping from server.")
+                            continue
 
+                        # Validate the expected payload
+                        if response_data.get("type") == "nearest_drivers":
+                            print("Received nearest drivers response:")
+                            print(json.dumps(response_data, indent=4))
 
+                            # Perform assertions or validations
+                            assert "nearest_drivers" in response_data
+                            assert isinstance(response_data["nearest_drivers"], list)
+                            for driver_info in response_data["nearest_drivers"]:
+                                assert isinstance(driver_info, list)
+                                assert "id" in driver_info[0]
+                                assert "distance" in driver_info[1]
+                                assert "duration" in driver_info[1]
+
+                            # Exit the loop after successful validation
+                            return
+
+                        # Handle unexpected messages
+                        print(f"Unexpected message: {response_data}")
+
+                    except json.JSONDecodeError:
+                        print("Received invalid JSON from server.")
+                    except ConnectionClosedError:
+                        print("Connection closed by server.")
+                        break
+
+        except (ConnectionRefusedError, ConnectionClosedError) as e:
+            retries += 1
+            print(f"Connection failed ({retries}/{RETRY_LIMIT}). Retrying in {RETRY_DELAY} seconds...")
+            await asyncio.sleep(RETRY_DELAY)
+
+    print("Failed to connect to WebSocket after multiple retries.")
+
+# Run the test
 if __name__ == "__main__":
-    connect_with_retries(max_retries=5)
+    asyncio.run(test_user_get_available_drivers())
