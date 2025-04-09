@@ -619,5 +619,69 @@ class KYCUpdateView(generics.UpdateAPIView):
             return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class DriverKYCUpdateView(APIView):
+    """
+    View for drivers to update their KYC details including profile picture,
+    license image, car images, and vehicle details.
+    """
+    permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_summary="Update Driver KYC",
+        operation_description="""
+        Allows an authenticated driver to upload or update their KYC information.
+        This includes:
+        - Profile Picture
+        - Driver's License Image
+        - Two Car Images
+        - Vehicle Registration
+        - Vehicle Type (e.g., '1 ton Truck', 'Bakkie')
+        - Vehicle Load Capacity
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=[
+                'first_name', 'last_name', 'phone_number', 'physical_address',
+                'profile_pic', 'license_image', 'car_images',
+                'vehicle_registration', 'vehicle_type', 'vehicle_load_capacity'
+            ],
+            properties={
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING),
+                'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+                'physical_address': openapi.Schema(type=openapi.TYPE_STRING),
+                'profile_pic': openapi.Schema(type=openapi.TYPE_FILE, description="Profile Picture"),
+                'license_image': openapi.Schema(type=openapi.TYPE_FILE, description="Driver's License"),
+                'car_images': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_FILE),
+                    description="Exactly two car images"
+                ),
+                'vehicle_registration': openapi.Schema(type=openapi.TYPE_STRING),
+                'vehicle_type': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=[choice[0] for choice in Driver.VEHICLE_CHOICES]
+                ),
+                'vehicle_load_capacity': openapi.Schema(type=openapi.TYPE_NUMBER),
+            }
+        ),
+        responses={
+            200: openapi.Response(description="KYC updated successfully."),
+            400: openapi.Response(description="Validation failed."),
+            401: openapi.Response(description="Authentication required."),
+            404: openapi.Response(description="Driver not found."),
+        }
+    )
+    def put(self, request):
+        try:
+            driver = Driver.objects.get(user=request.user)
+        except Driver.DoesNotExist:
+            return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DriverKYCUpdateSerializer(driver, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
