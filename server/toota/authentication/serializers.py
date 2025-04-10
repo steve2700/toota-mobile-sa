@@ -4,6 +4,8 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from phonenumber_field.serializerfields import PhoneNumberField
 from .models import User, Driver
+from cloudinary.uploader import upload
+
 
 ###############################################################################
 # Base Serializers
@@ -311,9 +313,25 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         # Handle the updating of car images and license image here
         car_images = validated_data.pop('car_images', None)
         license_image = validated_data.pop('license_image', None)
+        
+        # Update the fields that aren't related to file uploads
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save()
+        
+        # Handle uploading the license image to Cloudinary if provided
+        if license_image:
+            license_image_upload = upload(license_image)
+            instance.license_image = license_image_upload['secure_url']  # Cloudinary URL of the uploaded image
+        
+        # Handle uploading car images to Cloudinary if provided
+        if car_images:
+            uploaded_car_images = []
+            for image in car_images:
+                uploaded_image = upload(image)
+                uploaded_car_images.append(uploaded_image['secure_url'])  # Cloudinary URL of the uploaded image
+            instance.car_images = uploaded_car_images  # Assign the uploaded URLs to the car_images field
 
-        # Handle saving car images and license image (custom logic for storage if necessary)
+        # Save the instance
+        instance.save()
         return instance
+
