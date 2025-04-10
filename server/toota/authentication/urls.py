@@ -29,15 +29,15 @@ urlpatterns = [
     path('forgot-password/user/', UserForgotPasswordView.as_view(), name='forgot_password_user'),
     path('reset-password/user/', UserResetPasswordView.as_view(), name='reset_password_user'),
     path('profile/user/', ProfileView.as_view(), name='profile_user'),
-    path('kyc-update/user/', KYCUpdateView.as_view(), name='kyc_update'),
+    path('kyc-update/user/', KYCUpdateView.as_view(), name='kyc_update_user'),  # Update name to be more specific
 
     # Driver endpoints
     path('signup/driver/', DriverSignupView.as_view(), name='signup_driver'),
     path('login/driver/', DriverLoginView.as_view(), name='login_driver'),
     path('forgot-password/driver/', DriverForgotPasswordView.as_view(), name='forgot_password_driver'),
     path('reset-password/driver/', DriverResetPasswordView.as_view(), name='reset_password_driver'),
-    path('driver/kyc/update/', DriverKYCUpdateView.as_view(), name='driver-kyc-update'),
-    
+    path('kyc-update/driver/', DriverKYCUpdateView.as_view(), name='driver_kyc_update'),  # More clear and descriptive
+
     # Common endpoints
     path('logout/', LogoutView.as_view(), name='logout'),
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
