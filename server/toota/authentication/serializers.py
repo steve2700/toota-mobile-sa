@@ -320,15 +320,21 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         
         # Handle uploading the license image to Cloudinary if provided
         if license_image:
-            license_image_upload = upload(license_image)
-            instance.license_image = license_image_upload['secure_url']  # Cloudinary URL of the uploaded image
+            try:
+                license_image_upload = upload(license_image)
+                instance.license_image = license_image_upload['secure_url']  # Cloudinary URL of the uploaded image
+            except Exception as e:
+                raise serializers.ValidationError(f"Failed to upload license image: {str(e)}")
         
         # Handle uploading car images to Cloudinary if provided
         if car_images:
             uploaded_car_images = []
             for image in car_images:
-                uploaded_image = upload(image)
-                uploaded_car_images.append(uploaded_image['secure_url'])  # Cloudinary URL of the uploaded image
+                try:
+                    uploaded_image = upload(image)
+                    uploaded_car_images.append(uploaded_image['secure_url'])  # Cloudinary URL of the uploaded image
+                except Exception as e:
+                    raise serializers.ValidationError(f"Failed to upload car image: {str(e)}")
             instance.car_images = uploaded_car_images  # Assign the uploaded URLs to the car_images field
 
         # Save the instance
