@@ -107,6 +107,6 @@ def send_kyc_submission_email(driver_email):
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [driver_email])
     except Exception as e:
         # Log the error if sending the email fails
-        print(f"Error sending email to {driver_email}: {e}")
+        logging.error(f"Error sending email to {driver_email}: {e}")
         return False
     return True
