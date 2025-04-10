@@ -97,6 +97,7 @@ class Driver(AbstractCustomUser):
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES)
     vehicle_registration = models.CharField(max_length=50, unique=True)
     car_images = CloudinaryField('image')
+    license_image = CloudinaryField('image', null=True, blank=True) 
     number_plate = models.CharField(max_length=50, unique=True)
     vehicle_load_capacity = models.DecimalField(max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)")
     current_location = models.CharField(max_length=255, blank=True, null=True)
