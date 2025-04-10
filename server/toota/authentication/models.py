@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
 from cloudinary.models import CloudinaryField
+from django.contrib.postgres.fields import ArrayField
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core.exceptions import ValidationError
 
@@ -96,7 +97,7 @@ class Driver(AbstractCustomUser):
     ]
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES)
     vehicle_registration = models.CharField(max_length=50, unique=True)
-    car_images = CloudinaryField('image')
+    car_images = models.JSONField(default=list) 
     license_image = CloudinaryField('image', null=True, blank=True) 
     number_plate = models.CharField(max_length=50, unique=True)
     vehicle_load_capacity = models.DecimalField(max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)")
