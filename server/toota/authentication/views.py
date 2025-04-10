@@ -13,7 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 from drf_yasg.utils import swagger_auto_schema
-from .swagger_params import token_param, driver_kyc_schema
+from .swagger_params import token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param, user_kyc_schema,  driver_kyc_schema
 from drf_yasg import openapi
 
 from .models import  User, Driver, OTP
@@ -28,7 +28,7 @@ from .serializers import (
     KYCUpdateSerializer,
     DriverKYCUpdateSerializer
 )
-from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email 
+from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email, send_kyc_submission_email
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -550,9 +550,36 @@ class ResendVerificationCodeView(APIView):
             return Response({"error": "Failed to send verification email."},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class KYCUpdateView(generics.UpdateAPIView):
+    """
+    Endpoint for updating KYC details for the authenticated client user.
+    Allows updating first name, last name, physical address, phone number, and profile picture.
+    """
+    queryset = User.objects.all()
+    serializer_class = KYCUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
+    def get_object(self):
+        return self.request.user
 
-
+    @swagger_auto_schema(
+        operation_description="Update KYC details for the authenticated user. "
+                              "Fields include first name, last name, physical address, phone number, and profile picture.",
+        manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param],
+        consumes=['multipart/form-data'],
+        responses={
+            200: openapi.Response("KYC update successful."),
+            400: "Invalid input data.",
+            401: "Unauthorized. Authentication credentials were not provided."
+        }
+    )
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DriverKYCUpdateView(APIView):
     """
@@ -572,7 +599,7 @@ class DriverKYCUpdateView(APIView):
     )
     def get(self, request):
         try:
-            driver = Driver.objects.get(user=request.user)  # Fetch the driver linked to the authenticated user
+            driver = Driver.objects.get(driver=request.driver)  # Fetch the driver linked to the authenticated user
         except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -598,7 +625,7 @@ class DriverKYCUpdateView(APIView):
     )
     def put(self, request):
         try:
-            driver = Driver.objects.get(user=request.user)  # Linking driver with authenticated user
+            driver = Driver.objects.get(driver=request.driver)  # Linking driver with authenticated user
         except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -608,7 +635,7 @@ class DriverKYCUpdateView(APIView):
             serializer.save()
 
             # After successful KYC update, send email to the driver
-            send_kyc_submission_email(driver.user.email)  # Send email to the driver's associated user email
+            send_kyc_submission_email(driver.email)  # Send email to the driver's associated user email
 
             return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
 
