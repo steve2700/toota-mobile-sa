@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
-import 'package:toota_mobile_sa/screens/Welcome Screen/welcome_screen.dart';
 import '../../widgets/box_shadow.dart';
 
 class RoleScreen extends StatefulWidget {
@@ -176,16 +175,13 @@ class _RoleScreenState extends State<RoleScreen> {
                 onPressed: selectedRole == null
                     ? null // Disable button if no role is selected
                     : () {
-                        // Navigate to WelcomeScreen with the selected role
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WelcomeScreen(
-                              role: selectedRole!,
-                            ),
-                          ),
-                        );
-                      },
+                        // Navigate to different screens based on the selected role
+                        if (selectedRole == "Find a trip") {
+                          Navigator.pushNamed(context, RouteNames.driversignup);
+                        } else if (selectedRole == "Find a driver") {
+                          Navigator.pushNamed(context, RouteNames.signUp);
+                        }
+                    },
                 child: const Text(
                   "Continue",
                   style: TextStyle(
