@@ -1,7 +1,7 @@
 # authentication/swagger_params.py
 
 from drf_yasg import openapi
-from users.models import Driver  # Or adjust import path as needed
+from .models import Driver ,User 
 
 token_param = openapi.Parameter(
     'Authorization', openapi.IN_HEADER,
