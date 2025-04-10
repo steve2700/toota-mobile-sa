@@ -613,6 +613,7 @@ class DriverKYCUpdateView(APIView):
     def put(self, request):
         try:
             driver = Driver.objects.get(user=request.user)  # Linking driver with authenticated user
+        except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
 
         # Validate and update the KYC information
