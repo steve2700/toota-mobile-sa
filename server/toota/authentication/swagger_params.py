@@ -1,8 +1,7 @@
-# authentication/swagger_params.py
-
 from drf_yasg import openapi
-from .models import Driver ,User 
+from .models import Driver, User
 
+# Common Parameters (for both Driver and User KYC)
 token_param = openapi.Parameter(
     'Authorization', openapi.IN_HEADER,
     description="Bearer token for authentication",
@@ -45,6 +44,7 @@ profile_pic_param = openapi.Parameter(
     required=False
 )
 
+# Driver KYC Schema
 driver_kyc_schema = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     required=[
@@ -70,5 +70,18 @@ driver_kyc_schema = openapi.Schema(
             enum=[choice[0] for choice in Driver.VEHICLE_CHOICES]
         ),
         'vehicle_load_capacity': openapi.Schema(type=openapi.TYPE_NUMBER),
+    }
+)
+
+# User KYC Schema (User-specific, without vehicle info)
+user_kyc_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    required=['first_name', 'last_name', 'phone_number', 'physical_address', 'profile_pic'],
+    properties={
+        'first_name': openapi.Schema(type=openapi.TYPE_STRING),
+        'last_name': openapi.Schema(type=openapi.TYPE_STRING),
+        'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+        'physical_address': openapi.Schema(type=openapi.TYPE_STRING),
+        'profile_pic': openapi.Schema(type=openapi.TYPE_FILE, description="Profile Picture"),
     }
 )
