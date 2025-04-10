@@ -568,11 +568,7 @@ class KYCUpdateView(generics.UpdateAPIView):
                               "Fields include first name, last name, physical address, phone number, and profile picture.",
         manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param],
         consumes=['multipart/form-data'],
-        responses={
-            200: openapi.Response("KYC update successful."),
-            400: "Invalid input data.",
-            401: "Unauthorized. Authentication credentials were not provided."
-        }
+        responses={200: openapi.Response("KYC update successful."), 400: "Invalid input data.", 401: "Unauthorized. Authentication credentials were not provided."}
     )
     def patch(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
@@ -592,10 +588,7 @@ class DriverKYCUpdateView(APIView):
         operation_summary="Get Driver KYC",
         operation_description="Fetch the current KYC details of the driver.",
         manual_parameters=[token_param],  # Use imported Authorization token parameter for GET request
-        responses={
-            200: openapi.Response(description="Current KYC details retrieved successfully."),
-            404: openapi.Response(description="Driver not found."),
-        }
+        responses={200: openapi.Response(description="Current KYC details retrieved successfully."), 404: openapi.Response(description="Driver not found.")}
     )
     def get(self, request):
         try:
@@ -616,12 +609,7 @@ class DriverKYCUpdateView(APIView):
         - Vehicle Registration, Type, Load Capacity""",
         manual_parameters=[token_param],  # Use imported Authorization token parameter for PUT request
         request_body=driver_kyc_schema,  # Use imported schema for the PUT request body
-        responses={
-            200: openapi.Response(description="KYC updated successfully."),
-            400: openapi.Response(description="Validation failed."),
-            401: openapi.Response(description="Authentication required."),
-            404: openapi.Response(description="Driver not found."),
-        }
+        responses={200: openapi.Response(description="KYC updated successfully."), 400: openapi.Response(description="Validation failed."), 401: openapi.Response(description="Authentication required."), 404: openapi.Response(description="Driver not found.")}
     )
     def put(self, request):
         try:
