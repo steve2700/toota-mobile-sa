@@ -26,6 +26,26 @@ class VerificationController {
   }) async {
     return await _authService.resendOtp(email: email);
   }
+  Future<Map<String, dynamic>> verifyDriverEmail({
+    required String email,
+    required String otp,
+  }) async {
+   if (otp.length != 4 || !otp.contains(RegExp(r'^[0-9]+$'))) {
+    return {
+      'success': false,
+      'message': 'Please enter a valid 4-digit numeric code',
+    };
+  }
+
+    return await _authService.verifyDriverEmail(email: email, otp: otp);
+  }
+
+  Future<Map<String, dynamic>> resendOtpDriver({
+    required String email,
+  }) async {
+    return await _authService.resendOtpDriver(email: email);
+  }
+
 
   // Add this method to properly dispose the service
   void dispose() {

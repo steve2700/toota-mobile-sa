@@ -54,10 +54,33 @@ class LoginService {
       };
     }
   }
+   Future<Map<String, dynamic>> loginDriver({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/auth/login/driver/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email.trim(),
+          'password': password.trim(),
+        }),
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+        'statusCode': 0,
+      };
+    }
+  }
   void dispose() {
     _client.close();
   }
 }
+
 
 class HttpException implements Exception {
   final String message;

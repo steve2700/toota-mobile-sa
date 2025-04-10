@@ -1,22 +1,38 @@
 import 'package:flutter/material.dart';
-import '../../../constants.dart';
+
+class KycControllers {
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+  }
+}
 
 class InputField extends StatelessWidget {
   final String label;
   final String hintText;
-  final TextInputType type;
   final TextEditingController controller;
+  final TextInputType type;
   final FocusNode focusNode;
   final FocusNode? nextFocusNode;
+  final int? maxLength;
 
   const InputField({
     super.key,
     required this.label,
     required this.hintText,
-    required this.type,
     required this.controller,
+    required this.type,
     required this.focusNode,
     this.nextFocusNode,
+    this.maxLength,
   });
 
   @override
@@ -27,79 +43,63 @@ class InputField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            letterSpacing: 0.7,
             fontFamily: "Inter",
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
         ),
         const SizedBox(height: 8),
-        Theme(
-          data: Theme.of(context).copyWith(
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: AppColors.borderOutlineColor, // Cursor color
-              selectionColor: AppColors.roleColor.withOpacity(0.5),
-              selectionHandleColor: AppColors.borderOutlineColor,
+        TextField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: type,
+          maxLength: maxLength,
+          textInputAction: nextFocusNode != null 
+              ? TextInputAction.next 
+              : TextInputAction.done,
+          onSubmitted: (value) {
+            if (nextFocusNode != null) {
+              FocusScope.of(context).requestFocus(nextFocusNode);
+            }
+          },
+          decoration: InputDecoration(
+            counterText: "",
+            hintText: hintText,
+            hintStyle: const TextStyle(
+              fontFamily: "Inter",
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFFB0B0B0),
             ),
-          ),
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            keyboardType: type,
-            cursorColor: AppColors.borderOutlineColor,
-            textInputAction: nextFocusNode != null
-                ? TextInputAction.next
-                : TextInputAction.done,
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
-                if (nextFocusNode != null) {
-                  FocusScope.of(context).requestFocus(nextFocusNode);
-                } else {
-                  focusNode.unfocus();
-                }
-              } else {
-                focusNode.requestFocus();
-              }
-            },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: AppColors.roleColor,
-              hintText: hintText,
-              hintStyle: const TextStyle(
-                letterSpacing: 0.5,
-                fontFamily: "Inter",
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppColors.inputFieldColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: Color(0xFFE7E7E7),
+                width: 1,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: Color(0xFFE7E7E7),
+                width: 1,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: Color(0xFFE7E7E7),
+                width: 1,
               ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
             ),
           ),
         ),
       ],
     );
-  }
-}
-
-// Controllers Class
-class KycControllers {
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-
-  void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
-    emailController.dispose();
-    addressController.dispose();
   }
 }

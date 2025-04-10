@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/controllers/signup_controller.dart';
 import 'package:toota_mobile_sa/constants.dart';
-import 'package:toota_mobile_sa/screens/sign_up_screen/sign_up_screen_one/sign_up_screen_one.dart';
-
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+import 'package:toota_mobile_sa/screens/driver/otp/otp_screen.dart';
+class DriverSignup extends StatefulWidget {
+  const DriverSignup({super.key});
 
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends State<DriverSignup> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -58,7 +57,7 @@ Future<void> _signUp() async {
   });
 
   try {
-    await _signUpController.signUp(
+    await _signUpController.signUpdriver(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       onSuccess: () {
@@ -66,7 +65,7 @@ Future<void> _signUp() async {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SignUpOneScreen(
+            builder: (context) => OtpScreen(
               email: _emailController.text.trim(),
           
             ),
@@ -439,7 +438,7 @@ Future<void> _signUp() async {
 
   Widget _buildLoginText() {
     return GestureDetector(
-      onTap: () => Navigator.pushReplacementNamed(context, RouteNames.login),
+      onTap: () => Navigator.pushReplacementNamed(context, RouteNames.driverlogin),
       child: Text(
         'I already have an account',
         textAlign: TextAlign.center,

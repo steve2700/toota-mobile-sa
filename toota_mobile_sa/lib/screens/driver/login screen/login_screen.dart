@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:toota_mobile_sa/constants.dart';
 import 'package:toota_mobile_sa/services/login_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class DriverloginScreen extends StatefulWidget {
+  const DriverloginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<DriverloginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<DriverloginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await _loginService.loginUser(
+      final response = await _loginService.loginDriver(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
             // Define base dimensions that scale with screen size
             final basePadding = isSmallScreen ? 16.0 : 20.0;
             final baseFontSize = isSmallScreen ? 14.0 : 16.0;
-            final logoSize = isSmallScreen ? 80.0 : isLargeScreen ? 100.0 : 100.0;
+            final logoSize = isSmallScreen ? 60.0 : isLargeScreen ? 80.0 : 80.0;
             final buttonHeight = isSmallScreen ? 48.0 : 52.0;
             final inputFieldHeight = isSmallScreen ? 48.0 : 52.0;
 

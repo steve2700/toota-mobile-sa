@@ -13,6 +13,10 @@ class AppColors {
 }
 
 class RouteNames {
+  static const String driversignup='/driversignup';
+  static const String driververify='/driververify';
+  static const String driverlogin='/driverlogin';
+  static const String driverkyc='/driverkyc';
   static const String splash = '/splash';
   static const String role = '/role';
   static const String welcome = '/welcome';

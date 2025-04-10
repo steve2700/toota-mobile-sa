@@ -1,5 +1,8 @@
+// lib/screens/KYC/kyc_screen_two.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:toota_mobile_sa/controllers/kyc_controller.dart';
 import 'package:toota_mobile_sa/screens/KYC/components/kyc_input_fields.dart';
 import 'package:toota_mobile_sa/screens/KYC/kyc_loading_screen.dart';
 import 'package:toota_mobile_sa/screens/Welcome%20Screen/components/custom_button.dart';
@@ -7,31 +10,35 @@ import '../../constants.dart';
 import '../Welcome Screen/components/arrow_back.dart';
 
 class KycScreenTwo extends StatefulWidget {
-  const KycScreenTwo({super.key});
+
+  
+  const KycScreenTwo({
+    super.key,
+   
+  });
 
   @override
   State<KycScreenTwo> createState() => _KycScreenTwoState();
 }
 
 class _KycScreenTwoState extends State<KycScreenTwo> {
-  final KycControllers kycControllers =
-      KycControllers(); // Refactored controllers
+  final KycControllers kycControllers = KycControllers();
   bool isButtonEnabled = false;
 
-  // FocusNodes for managing focus transitions
   final FocusNode firstNameFocus = FocusNode();
   final FocusNode lastNameFocus = FocusNode();
   final FocusNode emailFocus = FocusNode();
   final FocusNode addressFocus = FocusNode();
+  final FocusNode phoneFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    // Add listeners to check fields
     kycControllers.firstNameController.addListener(checkFields);
     kycControllers.lastNameController.addListener(checkFields);
     kycControllers.emailController.addListener(checkFields);
     kycControllers.addressController.addListener(checkFields);
+    kycControllers.phoneController.addListener(checkFields);
   }
 
   @override
@@ -41,15 +48,18 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
     lastNameFocus.dispose();
     emailFocus.dispose();
     addressFocus.dispose();
+    phoneFocus.dispose();
     super.dispose();
   }
 
   void checkFields() {
     setState(() {
-      isButtonEnabled = kycControllers.firstNameController.text.isNotEmpty &&
+      isButtonEnabled = 
+          kycControllers.firstNameController.text.isNotEmpty &&
           kycControllers.lastNameController.text.isNotEmpty &&
           kycControllers.emailController.text.isNotEmpty &&
-          kycControllers.addressController.text.isNotEmpty;
+          kycControllers.addressController.text.isNotEmpty &&
+          kycControllers.phoneController.text.isNotEmpty;
     });
   }
 
@@ -57,6 +67,7 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
+    final kycController = Provider.of<KYCController>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -98,23 +109,29 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
                         alignment: Alignment.center,
                         children: [
                           CircleAvatar(
-                            backgroundColor: AppColors.avatarColor,
                             radius: 45,
-                            child: SvgPicture.asset("assets/images/person.svg"),
+                            backgroundColor: AppColors.avatarColor,
+                            backgroundImage: kycController.profileImage != null
+                                ? FileImage(kycController.profileImage!)
+                                : null,
+                            child: kycController.profileImage == null
+                                ? SvgPicture.asset("assets/images/person.svg")
+                                : null,
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.roleColor,
-                              ),
-                              child: GestureDetector(
-                                onTap: () {},
+                            child: GestureDetector(
+                              onTap: kycController.pickProfileImage,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.roleColor,
+                                ),
                                 child: SvgPicture.asset(
-                                    "assets/images/pencil-edit.svg"),
+                                  "assets/images/pencil-edit.svg",
+                                ),
                               ),
                             ),
                           ),
@@ -160,6 +177,15 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
                             controller: kycControllers.addressController,
                             type: TextInputType.streetAddress,
                             focusNode: addressFocus,
+                            nextFocusNode: phoneFocus,
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          InputField(
+                            label: "Phone Number",
+                            hintText: "Enter your phone number",
+                            controller: kycControllers.phoneController,
+                            type: TextInputType.phone,
+                            focusNode: phoneFocus,
                           ),
                         ],
                       ),
@@ -182,22 +208,40 @@ class _KycScreenTwoState extends State<KycScreenTwo> {
                   ),
                 ],
               ),
-              child: CustomButton(
-                containerWidth: screenWidth * 0.80,
-                label: "Confirm route",
-                function: isButtonEnabled
-                    ? () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const KycLoadingScreen()
-                            ));
-                      }
-                    : null,
-                color: isButtonEnabled
-                    ? AppColors.borderOutlineColor
-                    : AppColors.disabledButtonColor,
-              ),
+              child: kycController.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : CustomButton(
+                      containerWidth: screenWidth * 0.80,
+                      label: "Confirm route",
+                      function: isButtonEnabled ? () {
+                        kycController.updateKYC(
+                         
+                          firstName: kycControllers.firstNameController.text,
+                          lastName: kycControllers.lastNameController.text,
+                          physicalAddress: kycControllers.addressController.text,
+                          phoneNumber: kycControllers.phoneController.text,
+                          onSuccess: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const KycLoadingScreen(),
+                              ),
+                            );
+                          },
+                          onError: (error) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(error),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          },
+                        );
+                      } : null,
+                      color: isButtonEnabled
+                          ? AppColors.borderOutlineColor
+                          : AppColors.disabledButtonColor, isLoading: false,
+                    ),
             ),
           ],
         ),
