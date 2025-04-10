@@ -215,7 +215,7 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         help_text="Upload exactly 2 images of your vehicle."
     )
     vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
-    vehicle_load_capacity = serializers.FloatField(required=True, min_value=0.5, max_value=10.0)
+    vehicle_load_capacity = serializers.DecimalField(required=True, min_value=0.5, max_value=10.0, max_digits=5, decimal_places=2)
 
     class Meta:
         model = Driver
