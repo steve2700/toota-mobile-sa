@@ -566,9 +566,13 @@ class KYCUpdateView(generics.UpdateAPIView):
     @swagger_auto_schema(
         operation_description="Update KYC details for the authenticated user. "
                               "Fields include first name, last name, physical address, phone number, and profile picture.",
-        manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param],
+        request_body=KYCUpdateSerializer,
         consumes=['multipart/form-data'],
-        responses={200: openapi.Response("KYC update successful."), 400: "Invalid input data.", 401: "Unauthorized. Authentication credentials were not provided."}
+        responses={
+            200: openapi.Response(description="KYC update successful."),
+            400: openapi.Response(description="Invalid input data."),
+            401: openapi.Response(description="Unauthorized. Authentication credentials were not provided.")
+        }
     )
     def patch(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
@@ -576,6 +580,7 @@ class KYCUpdateView(generics.UpdateAPIView):
             serializer.save()
             return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class DriverKYCUpdateView(APIView):
     """
