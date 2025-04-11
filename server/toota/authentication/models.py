@@ -132,9 +132,6 @@ class Driver(AbstractCustomUser):
 
     def clean(self):
         super().clean()
-        if self.license_expiry and self.license_expiry < timezone.now().date():
-            raise ValidationError({'license_expiry': _("License expiry date must be in the future.")})
-        if self.vehicle_load_capacity and not (0.5 <= self.vehicle_load_capacity <= 10.0):
             raise ValidationError({'vehicle_load_capacity': _("Vehicle load capacity must be between 0.5 and 10 tons.")})
 
 ###############################################################################
