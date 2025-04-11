@@ -13,7 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 from drf_yasg.utils import swagger_auto_schema
-from .swagger_params import token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param, user_kyc_schema,  driver_kyc_schema
+##from .swagger_params import token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param, user_kyc_schema,  driver_kyc_schema
 from drf_yasg import openapi
 
 from .models import  User, Driver, OTP
@@ -549,7 +549,17 @@ class ResendVerificationCodeView(APIView):
         else:
             return Response({"error": "Failed to send verification email."},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
+
+
+# Authorization parameter
+token_param = openapi.Parameter(
+    'Authorization', openapi.IN_HEADER,
+    description="Bearer token for authentication",
+    type=openapi.TYPE_STRING,
+    required=True
+)
+
 class KYCUpdateView(generics.UpdateAPIView):
     """
     Endpoint for updating KYC details for the authenticated client user.
@@ -566,8 +576,13 @@ class KYCUpdateView(generics.UpdateAPIView):
     @swagger_auto_schema(
         operation_description="Update KYC details for the authenticated user. "
                               "Fields include first name, last name, physical address, phone number, and profile picture.",
-        request_body=KYCUpdateSerializer,
-        consumes=['multipart/form-data'],
+        manual_parameters=[
+            openapi.Parameter('first_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('last_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('phone_number', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=False)
+        ],
         responses={
             200: openapi.Response(description="KYC update successful."),
             400: openapi.Response(description="Invalid input data."),
@@ -592,16 +607,18 @@ class DriverKYCUpdateView(APIView):
     @swagger_auto_schema(
         operation_summary="Get Driver KYC",
         operation_description="Fetch the current KYC details of the driver.",
-        manual_parameters=[token_param],  # Use imported Authorization token parameter for GET request
-        responses={200: openapi.Response(description="Current KYC details retrieved successfully."), 404: openapi.Response(description="Driver not found.")}
+        manual_parameters=[token_param],
+        responses={
+            200: openapi.Response(description="Current KYC details retrieved successfully."),
+            404: openapi.Response(description="Driver not found.")
+        }
     )
     def get(self, request):
         try:
-            driver = Driver.objects.get(user=request.user)  # Fetch the driver linked to the authenticated user
+            driver = Driver.objects.get(user=request.user)
         except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Serialize and return the driver's KYC details
         serializer = DriverKYCUpdateSerializer(driver)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -612,24 +629,49 @@ class DriverKYCUpdateView(APIView):
         - Driver's License Image
         - Two Car Images
         - Vehicle Registration, Type, Load Capacity""",
-        manual_parameters=[token_param],  # Use imported Authorization token parameter for PUT request
-        request_body=driver_kyc_schema,  # Use imported schema for the PUT request body
-        responses={200: openapi.Response(description="KYC updated successfully."), 400: openapi.Response(description="Validation failed."), 401: openapi.Response(description="Authentication required."), 404: openapi.Response(description="Driver not found.")}
+        manual_parameters=[
+            token_param,
+            openapi.Parameter('first_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('last_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('phone_number', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
+            openapi.Parameter('license_image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
+            openapi.Parameter('car_images', openapi.IN_FORM, 
+                             type=openapi.TYPE_ARRAY, 
+                             items=openapi.Items(type=openapi.TYPE_FILE),
+                             description="Exactly two car images",
+                             required=True),
+            openapi.Parameter('vehicle_registration', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('vehicle_type', openapi.IN_FORM, 
+                             type=openapi.TYPE_STRING,
+                             enum=[choice[0] for choice in Driver.VEHICLE_CHOICES],
+                             required=True),
+            openapi.Parameter('vehicle_load_capacity', openapi.IN_FORM, 
+                             type=openapi.TYPE_NUMBER,
+                             description="Between 0.5 and 10.0 tons",
+                             required=True),
+        ],
+        responses={
+            200: openapi.Response(description="KYC updated successfully."),
+            400: openapi.Response(description="Validation failed."),
+            401: openapi.Response(description="Authentication required."),
+            404: openapi.Response(description="Driver not found.")
+        }
     )
     def put(self, request):
         try:
-            driver = Driver.objects.get(user=request.user)  # Linking driver with authenticated user
+            driver = Driver.objects.get(user=request.user)
         except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Validate and update the KYC information
         serializer = DriverKYCUpdateSerializer(driver, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-
-            # After successful KYC update, send email to the driver
-            send_kyc_submission_email(driver.email)  # Send email to the driver's associated user email
-
+            send_kyc_submission_email(driver.email)
             return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            
+
