@@ -549,7 +549,7 @@ class ResendVerificationCodeView(APIView):
         else:
             return Response({"error": "Failed to send verification email."},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            
 class KYCUpdateView(generics.UpdateAPIView):
     """
     Endpoint for updating KYC details for the authenticated client user.
