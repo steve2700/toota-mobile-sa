@@ -84,8 +84,6 @@ class User(AbstractCustomUser):
 # Driver Model
 ###############################################################################
 class Driver(AbstractCustomUser):
-    ##license_number = models.CharField(max_length=50, unique=True)
-    ##license_expiry = models.DateField()
     VEHICLE_CHOICES = [
         ('MotorBike', 'MotorBike'),
         ('1 ton Truck', '1 ton Truck'),
@@ -97,9 +95,8 @@ class Driver(AbstractCustomUser):
     ]
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES)
     vehicle_registration = models.CharField(max_length=50, unique=True)
-    car_images = models.JSONField(default=list) 
-    license_image = CloudinaryField('image', null=True, blank=True) 
-    number_plate = models.CharField(max_length=50, unique=True)
+    car_images = models.JSONField(default=list)
+    license_image = CloudinaryField('image', null=True, blank=True)
     vehicle_load_capacity = models.DecimalField(max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)")
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
@@ -132,6 +129,7 @@ class Driver(AbstractCustomUser):
 
     def clean(self):
         super().clean()
+        if not (0.5 <= float(self.vehicle_load_capacity) <= 10.0):
             raise ValidationError({'vehicle_load_capacity': _("Vehicle load capacity must be between 0.5 and 10 tons.")})
 
 ###############################################################################
