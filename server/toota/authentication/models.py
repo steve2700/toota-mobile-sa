@@ -84,8 +84,8 @@ class User(AbstractCustomUser):
 # Driver Model
 ###############################################################################
 class Driver(AbstractCustomUser):
-    license_number = models.CharField(max_length=50, unique=True)
-    license_expiry = models.DateField()
+    ##license_number = models.CharField(max_length=50, unique=True)
+    ##license_expiry = models.DateField()
     VEHICLE_CHOICES = [
         ('MotorBike', 'MotorBike'),
         ('1 ton Truck', '1 ton Truck'),
