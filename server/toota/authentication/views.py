@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 from drf_yasg.utils import swagger_auto_schema
+##from .swagger_params import token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param, user_kyc_schema,  driver_kyc_schema
 from drf_yasg import openapi
 
 from .models import  User, Driver, OTP
@@ -24,9 +25,10 @@ from .serializers import (
     UserProfileSerializer,
     DriverSignupSerializer,
     DriverLoginSerializer,
-    KYCUpdateSerializer
+    KYCUpdateSerializer,
+    DriverKYCUpdateSerializer
 )
-from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email 
+from .utils import generate_otp, send_password_reset_otp_email, send_verification_otp_email, send_kyc_submission_email
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -549,42 +551,13 @@ class ResendVerificationCodeView(APIView):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# Swagger manual parameters for JWT and form fields
+
+# Authorization parameter
 token_param = openapi.Parameter(
     'Authorization', openapi.IN_HEADER,
     description="Bearer token for authentication",
     type=openapi.TYPE_STRING,
     required=True
-)
-first_name_param = openapi.Parameter(
-    'first_name', openapi.IN_FORM,
-    description="First name",
-    type=openapi.TYPE_STRING,
-    required=True
-)
-last_name_param = openapi.Parameter(
-    'last_name', openapi.IN_FORM,
-    description="Last name",
-    type=openapi.TYPE_STRING,
-    required=True
-)
-physical_address_param = openapi.Parameter(
-    'physical_address', openapi.IN_FORM,
-    description="Physical address",
-    type=openapi.TYPE_STRING,
-    required=True
-)
-phone_number_param = openapi.Parameter(
-    'phone_number', openapi.IN_FORM,
-    description="Phone number",
-    type=openapi.TYPE_STRING,
-    required=True
-)
-profile_pic_param = openapi.Parameter(
-    'profile_pic', openapi.IN_FORM,
-    description="Profile picture file upload",
-    type=openapi.TYPE_FILE,
-    required=False
 )
 
 class KYCUpdateView(generics.UpdateAPIView):
@@ -603,12 +576,17 @@ class KYCUpdateView(generics.UpdateAPIView):
     @swagger_auto_schema(
         operation_description="Update KYC details for the authenticated user. "
                               "Fields include first name, last name, physical address, phone number, and profile picture.",
-        manual_parameters=[token_param, first_name_param, last_name_param, physical_address_param, phone_number_param, profile_pic_param],
-        consumes=['multipart/form-data'],
+        manual_parameters=[
+            openapi.Parameter('first_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('last_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('phone_number', openapi.IN_FORM, type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=False)
+        ],
         responses={
-            200: openapi.Response("KYC update successful."),
-            400: "Invalid input data.",
-            401: "Unauthorized. Authentication credentials were not provided."
+            200: openapi.Response(description="KYC update successful."),
+            400: openapi.Response(description="Invalid input data."),
+            401: openapi.Response(description="Unauthorized. Authentication credentials were not provided.")
         }
     )
     def patch(self, request, *args, **kwargs):
@@ -617,4 +595,83 @@ class KYCUpdateView(generics.UpdateAPIView):
             serializer.save()
             return Response({"message": "KYC update successful."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DriverKYCUpdateView(APIView):
+    """
+    Allows drivers to update KYC including vehicle details and document uploads.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @swagger_auto_schema(
+        operation_summary="Get Driver KYC",
+        operation_description="Fetch the current KYC details of the driver.",
+        manual_parameters=[token_param],
+        responses={
+            200: openapi.Response(description="Current KYC details retrieved successfully."),
+            404: openapi.Response(description="Driver not found.")
+        }
+    )
+    def get(self, request):
+        try:
+            driver = Driver.objects.get(user=request.user)
+        except Driver.DoesNotExist:
+            return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DriverKYCUpdateSerializer(driver)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_summary="Update Driver KYC",
+        operation_description="""Upload or update:
+        - Basic info
+        - Driver's License Image
+        - Two Car Images
+        - Vehicle Registration, Type, Load Capacity""",
+        manual_parameters=[
+            token_param,
+            openapi.Parameter('first_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('last_name', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('phone_number', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
+            openapi.Parameter('license_image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
+            openapi.Parameter('car_images', openapi.IN_FORM, 
+                             type=openapi.TYPE_ARRAY, 
+                             items=openapi.Items(type=openapi.TYPE_FILE),
+                             description="Exactly two car images",
+                             required=True),
+            openapi.Parameter('vehicle_registration', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter('vehicle_type', openapi.IN_FORM, 
+                             type=openapi.TYPE_STRING,
+                             enum=[choice[0] for choice in Driver.VEHICLE_CHOICES],
+                             required=True),
+            openapi.Parameter('vehicle_load_capacity', openapi.IN_FORM, 
+                             type=openapi.TYPE_NUMBER,
+                             description="Between 0.5 and 10.0 tons",
+                             required=True),
+        ],
+        responses={
+            200: openapi.Response(description="KYC updated successfully."),
+            400: openapi.Response(description="Validation failed."),
+            401: openapi.Response(description="Authentication required."),
+            404: openapi.Response(description="Driver not found.")
+        }
+    )
+    def put(self, request):
+        try:
+            driver = Driver.objects.get(user=request.user)
+        except Driver.DoesNotExist:
+            return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DriverKYCUpdateSerializer(driver, data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            send_kyc_submission_email(driver.email)
+            return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            
 
