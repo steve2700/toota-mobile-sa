@@ -6,7 +6,7 @@ class FindDriversSerializer(serializers.ModelSerializer):
     class Meta:
         model = Driver
         exclude = ['password', 'last_login', 'is_superuser', 'is_staff', 'is_active', 'groups', 'user_permissions', 'created_at', 'updated_at',
-                  'license_number', 'license_expiry', 'number_plate']
+                  'license_number', 'license_expiry', 'number_plate', 'physical_address', 'vehicle_registration', 'earnings']
 
 class CheckTripStatusSerializer(serializers.Serializer):
     trip_id = serializers.UUIDField(required=True)
