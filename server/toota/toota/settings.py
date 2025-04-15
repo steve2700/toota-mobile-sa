@@ -6,7 +6,7 @@ import cloudinary
 # from rest_framework_simplejwt.settings import api_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+MEDIA_URL = 'https://res.cloudinary.com/<your-cloud-name>/'
 # Load sensitive information from .env
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',  # Replacing rest_framework.authtoken
     'drf_yasg',
+    'cloudinary',
+    'cloudinary_storage',
     'corsheaders',
     'phonenumber_field',
     'authentication',  # Custom auth app
@@ -74,7 +76,7 @@ WSGI_APPLICATION = 'toota.wsgi.application'
 ASGI_APPLICATION = 'toota.asgi.application'
 
 # Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -122,10 +124,8 @@ REST_FRAMEWORK = {
 
 # Cloudinary settings
 cloudinary.config(
-    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
-    api_key=config('CLOUDINARY_API_KEY'),
-    api_secret=config('CLOUDINARY_API_SECRET'),
-    secure=True
+    cloudinary_url=config('CLOUDINARY_URL'),
+    secure=True,
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -167,6 +167,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

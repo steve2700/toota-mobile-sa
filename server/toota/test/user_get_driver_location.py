@@ -1,34 +1,64 @@
 import websocket
 import json
 import time
-from datetime import datetime
 
-PASSENGER_WS_URL = "ws://localhost:8000/ws/trips/user/location/1d7341ba-d2e1-4f12-bda4-da56649d515d/"
-USER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQxNTM5NTU3LCJpYXQiOjE3NDE0NTMxNTcsImp0aSI6ImNkM2Q0NmM1MjUzMjQ1MDJhOTQ0ODI0ZmVhOGYxMWMzIiwidXNlcl9pZCI6Ijk1YWY2YzRjLTNhODctNGQ4My1hZTI0LTU1ZWYzOGFjYTcxMiJ9.tTMoxfqp9pNL3cgXDaqKZoTnyLmHpLGRQcgKBhQwEiE"
+PASSENGER_WS_URL = "ws://localhost:8000/ws/trips/user/location/6e919bcb-74f5-41ef-994d-a3d66449b1a9/"
+USER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ0NzI5MTQxLCJpYXQiOjE3NDQ3MjU1NDEsImp0aSI6ImJkZDhkZWM1MWNhNzQzOTM4NTkxZWE1NmU1NmYwZDVhIiwidXNlcl9pZCI6IjgzYjVmMzQ0LTQwYTktNDYyMy1iNDg3LWNlM2ZhNDMwNzFiZSJ9.ngC-IFj8IDQCs10dGmAeGNXdffWvfFVa0tIWbaJkoI4"
+
+MAX_RETRIES = 10
+retries = 0
+USER_LATITUDE = 6.6137086720679354
+USER_LONGITUDE = 3.305057535428996
+
+def on_open(ws):
+    print(f"Passenger WebSocket opened")
+    payload = {
+        "user_latitude": USER_LATITUDE,
+        "user_longitude": USER_LONGITUDE
+    }
+    ws.send(json.dumps(payload))
+    print(f"Sent user current location: {payload}")
+
+def on_message(ws, message):
+    data = json.loads(message)
+    print(f"Passenger received: {data}")
+
+def on_error(ws, error):
+    global retries
+    print(f"WebSocket error: {error}")
+
+def on_close(ws, close_status_code, close_msg):
+    global retries
+    print(f"WebSocket closed (code={close_status_code}, msg={close_msg})")
 
 def passenger_simulation():
-    headers = ["Authorization: Bearer " + USER_TOKEN]
+    global retries
+
+    headers = {"Authorization": "Bearer " + USER_TOKEN}
     
-    while True:
+    while retries < MAX_RETRIES:
         try:
-            print(f"[{datetime.now()}] Connecting passenger to {PASSENGER_WS_URL}")
-            ws = websocket.create_connection(PASSENGER_WS_URL, header=headers)
-            print(f"[{datetime.now()}] Passenger connected")
-            
-            while True:
-                message = ws.recv()
-                data = json.loads(message)
-                print(f"[{datetime.now()}] Passenger received: {data}")
-                
+            print(f"Attempting to connect (Retry {retries + 1}/{MAX_RETRIES})")
+            ws_app = websocket.WebSocketApp(
+                PASSENGER_WS_URL,
+                header=headers,
+                on_open=on_open,
+                on_message=on_message,
+                on_error=on_error,
+                on_close=on_close
+            )
+            ws_app.run_forever()
+        except KeyboardInterrupt:
+            print("\n[INFO] KeyboardInterrupt detected. Exiting simulator.")
+            ws_app.close()
         except Exception as e:
-            print(f"[{datetime.now()}] Passenger connection error: {e}")
+            print("Unexpected exception: {e}")
         finally:
-            try:
-                ws.close()
-            except Exception:
-                pass
-            print(f"[{datetime.now()}] Reconnecting in 3 seconds...")
+            retries += 1
+            print("Reconnecting in 3 seconds...")
             time.sleep(3)
+
+    print("Max retries reached. Exiting.")
 
 if __name__ == "__main__":
     passenger_simulation()

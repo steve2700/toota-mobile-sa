@@ -38,10 +38,10 @@ class Trip(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey("authentication.User", on_delete=models.CASCADE)
     driver = models.ForeignKey("authentication.Driver", on_delete=models.SET_NULL, null=True, blank=True)
-    pickup_lat = models.FloatField(null=True, blank=True)
-    pickup_long = models.FloatField(null=True, blank=True)
-    dest_lat = models.FloatField(null=True, blank=True)
-    dest_long = models.FloatField(null=True, blank=True)
+    pickup_latitude = models.FloatField(null=True, blank=True)
+    pickup_longitude = models.FloatField(null=True, blank=True)
+    dest_latitude = models.FloatField(null=True, blank=True)
+    dest_longitude = models.FloatField(null=True, blank=True)
     load_description = models.TextField(null=True, blank=True)
     accepted_fare = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='NGN')
@@ -90,3 +90,15 @@ class Trip(models.Model):
             total_fare *= self.SURGE_MULTIPLIER
         
         return round(total_fare, 2)
+
+class DriverRating(models.Model):
+    driver = models.ForeignKey("authentication.Driver", related_name='ratings', on_delete=models.CASCADE)
+    user = models.ForeignKey("authentication.User", related_name='reviews', null=True, blank=True, on_delete=models.SET_NULL)
+    rating = models.PositiveSmallIntegerField()  # between 1 and 5
+    review = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together = ('driver', 'user')
+    
+    def __str__(self):
+        return f"Rating for {self.driver.email} by {self.user.email if self.user else 'Anonymous'}: {self.rating}"

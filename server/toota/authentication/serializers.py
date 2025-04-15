@@ -111,7 +111,7 @@ class KYCUpdateSerializer(serializers.ModelSerializer):
     Validates first name, last name, physical address, phone number, and profile picture.
     """
     phone_number = PhoneNumberField(required=True)
-    profile_pic = serializers.ImageField(required=False, allow_null=True)
+    profile_pic = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = User

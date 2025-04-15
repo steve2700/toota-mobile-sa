@@ -43,7 +43,8 @@ class Payment(models.Model):
             ('flutterwave', 'Flutterwave'),
             ('paystack', 'Paystack')
         ],
-        default="flutterwave"
+        null = True,
+        blank = True
     )
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     transaction_id = models.CharField(max_length=100, unique=True, blank=True, null=True)

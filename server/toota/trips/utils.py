@@ -4,82 +4,78 @@ import datetime
 from dotenv import load_dotenv
 import requests
 load_dotenv()
+import aiohttp
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def find_nearest_drivers(pickup_lat, pickup_lon, vehicle_type, limit=20):
+    """
+    Find the nearest available drivers to the given pickup location.
+    Returns a list of serialized driver data.
+    """
     from .serializers import FindDriversSerializer
     from geopy.distance import geodesic
-    """
-    Find a list of available drivers near the given pickup location.
-    Uses geopy to calculate real distances.
-    """
+
     if not vehicle_type:
-        available_drivers = Driver.objects.filter(is_available=True)  # Get all available drivers
+        available_drivers = Driver.objects.filter(is_available=True)
     else:
-        available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)  # Get available drivers
-    drivers_list = []
+        available_drivers = Driver.objects.filter(is_available=True, vehicle_type__in=vehicle_type)
+
     pickup_location = (float(pickup_lat), float(pickup_lon))
 
+    drivers_with_distance = []
     for driver in available_drivers:
         driver_location = (driver.latitude, driver.longitude)
-        distance = geodesic(pickup_location, driver_location).km  # Calculate distance in KM
-        
-        for radius in [5, 10, 20, 30, 40, 50]:
-            if distance <= radius:  # Only include drivers within the radius
-                drivers_list.append({
-                    "driver": FindDriversSerializer(driver).data,
-                    "distance": round(distance, 2)
-                })
+        distance = geodesic(pickup_location, driver_location).km
+        drivers_with_distance.append((driver, distance))
 
-    # Sort drivers by nearest distance and limit results
-    drivers_list = sorted(drivers_list, key=lambda x: x["distance"])[:limit]
+    # Sort by distance and limit the results
+    sorted_drivers = sorted(drivers_with_distance, key=lambda x: x[1])[:limit]
 
-    # If no driver was found within the radius, serialize all available drivers.
-    if not drivers_list:
-        drivers_list = [
-            {"driver": FindDriversSerializer(driver).data, "distance": None}
-            for driver in available_drivers
-        ]
-    
-    return drivers_list
+    # Return only serialized driver data (no distance)
+    return [FindDriversSerializer(driver).data for driver, _ in sorted_drivers]
 
-def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
+async def get_route_data(pickup_lat, pickup_lon, dest_lat, dest_lon):
     """
-    Call OSRM's public API to calculate route data between two coordinates.
+    Call OSRM's public API to calculate route data between two coordinates using aiohttp.
     Returns a dict with 'distance_km' (rounded to 2 decimals) and 'duration' (formatted as 'X min' or 'X sec').
     """
     url = f"http://router.project-osrm.org/route/v1/driving/{pickup_lon},{pickup_lat};{dest_lon},{dest_lat}?overview=false"
 
     try:
-        response = requests.get(url)
-        data = response.json()
+        # Use aiohttp instead of requests for async HTTP requests
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=5) as response:  # 5-second timeout
+                data = await response.json()
 
-        if data.get("code") == "Ok" and "routes" in data and len(data["routes"]) > 0:
-            route = data["routes"][0]
+                if data.get("code") == "Ok" and "routes" in data and len(data["routes"]) > 0:
+                    route = data["routes"][0]
 
-            distance_km = round(float(route["distance"]) / 1000.0, 2)  # Rounded to 2 decimals
-            duration_sec = float(route["duration"])  # Convert duration to seconds
-            
-            # Format duration to be human-readable
-            if duration_sec < 60:
-                duration_str = f"{int(duration_sec)} sec"
-            elif duration_sec < 3600:
-                duration_str = f"{int(duration_sec // 60)} min"
-            else:
-                hours = int(duration_sec // 3600)
-                minutes = int((duration_sec % 3600) // 60)
-                seconds = int(duration_sec % 60)
-                duration_str = f"{hours} hour{'s' if hours > 1 else ''} {minutes} min"
-                if seconds > 0:
-                    duration_str += f" {seconds} sec"
+                    distance_km = round(float(route["distance"]) / 1000.0, 2)
+                    duration_sec = float(route["duration"])
+                    
+                    # Format duration to be human-readable
+                    if duration_sec < 60:
+                        duration_str = f"{int(duration_sec)} sec"
+                    elif duration_sec < 3600:
+                        duration_str = f"{int(duration_sec // 60)} min"
+                    else:
+                        hours = int(duration_sec // 3600)
+                        minutes = int((duration_sec % 3600) // 60)
+                        seconds = int(duration_sec % 60)
+                        duration_str = f"{hours} hour{'s' if hours > 1 else ''} {minutes} min"
+                        if seconds > 0:
+                            duration_str += f" {seconds} sec"
 
-            return {"distance_km": distance_km, "duration": duration_str}
+                    return {"distance": distance_km, "duration": duration_str}
 
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.error(f"Error calling OSRM API: {e}")
     except Exception as e:
-        print(f"Error calling OSRM API: {e}")
-
-    return {"distance_km": 0.0, "duration": "0 min"}
-
-
+        logger.error(f"Unexpected error calling OSRM API: {e}")
 
 def calculate_easter(year):
     """

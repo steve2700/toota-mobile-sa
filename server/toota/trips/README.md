@@ -1,314 +1,454 @@
-# TripDocumentation
+Here’s your documentation beautifully formatted in **README HTML-friendly Markdown style** (with `<details>` tags, code blocks, bold headers, and formatting polish) — clean and professional:
 
-## Overview
-The application uses WebSockets for real-time communication between users, drivers, and the system. This enables features like live location tracking, trip requests, and status updates. There are also views(apis) that f
+---
 
-## WebSocket Endpoints
+# 🚗 TripDocumentation
 
-### 1. Driver Location WebSocket
-**WebSocket URL:** `ws/driver/location/`
+## 📌 Overview
+The application uses **WebSockets** for real-time communication between users, drivers, and the system. This enables features like:
 
-**Purpose:** Updates the location of a driver in real-time.
+- Live location tracking  
+- Trip requests  
+- Status updates  
 
-**Authentication:** Driver only
+### ⚠️ Important Notes:
 
-**Send data format:**
-```json
-{
+- **Base URL:**  
+  ```
+  /toota-mobile-sa.onrender.com/
+  ```
+- Always reconnect with retries (max: **10 times**)  
+- Sockets will send a `ping` payload to keep the connection alive:
+  ```json
+  {
+    "type": "ping"
+  }
+  ```
+- When driver changes availability status, update via:  
+  ```
+  https://{base_url}/trips/driver/online-status/
+  ```  
+  Then:
+  - Disconnect from all sockets if set to offline  
+  - Reconnect if set to online  
+
+- Errors from socket always follow this structure:
+  ```json
+  {
+    "type": "error",
+    "message": "..."
+  }
+  ```
+
+- Disconnect from `wss://{base_url}/ws/trips/user/` once done to reduce server load.
+
+---
+
+## 🧭 Driver WebSocket Endpoints
+
+<details>
+<summary><strong>1. Driver Location WebSocket</strong></summary>
+
+- **URL:**  
+  `wss://{base_url}/ws/trips/driver/location/`
+
+- **Purpose:**  
+  Updates the driver's location in real-time
+
+- **Authentication:**  
+  Driver only
+
+- **Instruction:**  
+  - Use Google Maps API to extract coordinates  
+  - Send coordinates every **30 seconds**  
+  - **Driver must be online**, else connection fails
+
+- **Send Format:**
+  ```json
+  {
     "latitude": float,
     "longitude": float
-}
-```
+  }
+  ```
 
-**Receive data format:**
-```json
-{
-    "latitude": float,
-    "longitude": float,
-    "driver_details": {
-        "id": string,
-        "name": string,
-        "email": string,
-        "phone": string,
-        "vehicle_type": string,
-        "rating": float,
-        "is_available": boolean,
-        "profile_pic": string | null,
-        "car_image": string | null
-    }
-}
-```
+- **Response Format:**
+  ```json
+  {
+    "type": "driver_location_update",
+    "message": "location updated successfully"
+  }
+  ```
 
-### 2. User Get Driver Location WebSocket
-**WebSocket URL:** `ws/user/driver/{driver_id}/location/`
+</details>
 
-**Purpose:** Allows a user to subscribe to a driver's real-time location updates.
+---
 
-**Authentication:** User only
+<details>
+<summary><strong>2. Driver Trip Response WebSocket</strong></summary>
 
-**Send data format:** None required
+- **URL:**  
+  `wss://{base_url}/ws/trips/driver/`
 
-**Receive data format:**
-```json
-{
-    "latitude": float,
-    "longitude": float,
-    "driver_details": {
-        "id": string,
-        "name": string,
-        "email": string,
-        "phone": string,
-        "vehicle_type": string,
-        "rating": float,
-        "is_available": boolean,
-        "profile_pic": string | null,
-        "car_image": string | null
-    }
-}
-```
+- **Purpose:**  
+  Driver receives and responds to trip requests in real time
 
-### 3. Trip Request WebSocket (User)
-**WebSocket URL:** `ws/trips/user/request/`
+- **Authentication:**  
+  Driver only
 
-**Purpose:** Allows users to create trip requests and select drivers.
+- **Instructions:**
+  - Driver must be online  
+  - Wait for a trip request with type `new_trip_request`:
 
-**Authentication:** User only
-
-**Send data format (create trip):**
-```json
-{
-    "action": "create_trip",
-    "vehicle_type": string,
-    "pickup": string,
-    "destination": string,
-    "pickup_lat": float,
-    "pickup_lon": float,
-    "dest_lat": float,
-    "dest_lon": float,
-    "load_description": string
-}
-```
-
-**Receive data format (after trip creation):**
-```json
-{
-    "message": "Trip created successfully - select a driver",
-    "trip_id": string,
-    "estimated_fare": float,
-    "distance_km": float,
-    "estimated_time": string,
-    "pickup": string,
-    "destination": string,
-    "vehicle_type": string,
-    "load_description": string,
-    "user_info": {
-        "id": string,
-        "name": string,
-        "phone": string
-    },
-    "available_drivers": array,
-    "status": "pending"
-}
-```
-
-**Send data format (confirm driver):**
-```json
-{
-    "action": "confirm_driver",
-    "trip_id": string,
-    "driver_id": string
-}
-```
-
-**Receive data format (after driver confirmation):**
-```json
-{
-    "message": "Awaiting driver response",
-    "trip_id": string,
-    "status": "pending",
-    "driver_info": {
-        "id": string,
-        "name": string,
-        "phone": string,
-        "vehicle_type": string,
-        "rating": float
-    },
-    "payment_info": {
-        "payment_method": string,
-        "payment_status": string,
-        "amount": float,
-        "currency": string
-    }
-}
-```
-
-**Receive data format (if driver accepts):**
-```json
-{
-    "type": "trip_status_update",
-    "trip_id": string,
-    "status": "accepted",
-    "driver_info": {
-        "id": string,
-        "name": string,
-        "first_name": string,
-        "last_name": string,
-        "phone": string,
-        "vehicle_type": string,
-        "rating": float
-    },
-    "trip_details": {
-        "id": string,
-        "pickup": string,
-        "destination": string,
-        "pickup_lat": float,
-        "pickup_long": float,
-        "dest_lat": float,
-        "dest_long": float,
-        "vehicle_type": string,
-        "load_description": string,
-        "fare": float,
-        "status": string,
-        "distance_km": float,
-        "estimated_time": string,
-        "created_at": string
-    },
-    "payment_info": {
-        "payment_method": string,
-        "payment_status": string,
-        "amount": float,
-        "currency": string
-    }
-}
-```
-
-**Receive data format (if driver doesn't respond within 30 seconds):**
-```json
-{
-    "message": "Driver did not respond - select another driver",
-    "trip_id": string,
-    "status": "pending",
-    "available_drivers": array
-}
-```
-
-### 4. Driver Trip Response WebSocket
-**WebSocket URL:** `ws/trips/driver/response/`
-
-**Purpose:** Allows drivers to receive trip requests and respond to them.
-
-**Authentication:** Driver only
-
-**Receive data format (new trip request):**
-```json
-{
+  ```json
+  {
     "type": "new_trip_request",
-    "trip_details": {
-        "trip_id": string,
-        "estimated_fare": float,
-        "distance_km": float,
-        "estimated_time": string,
-        "pickup": string,
-        "destination": string,
-        "vehicle_type": string,
-        "load_description": string,
-        "user_info": {
-            "id": string,
-            "name": string,
-            "phone": string
-        },
-        "payment_info": {
-            "payment_method": string,
-            "payment_status": string,
-            "amount": float,
-            "currency": string
-        }
+    "data": {
+      "trip_id": "...",
+      "pickup": "...",
+      "destination": "...",
+      "vehicle_type": "...",
+      "load_description": "...",
+      "user_info": {
+        "id": "...",
+        "name": "...",
+        "phone": "..."
+      },
+      "payment_info": {
+        "payment_method": "...",
+        "payment_status": "success/pending",
+        "amount": float,
+        "currency": "..."
+      }
     }
-}
-```
+  }
+  ```
 
-**Send data format (respond to trip request):**
-```json
-{
-    "trip_id": string,
-    "driver_response_status": "accepted" | "rejected"
-}
-```
+  - Respond within **30 seconds**, or lose the trip
 
-**Receive data format (if accepted):**
-```json
-{
-    "user_id": string,
-    "first_name": string,
-    "last_name": string,
-    "email": string,
-    "phone": string
-}
-```
+- **Send Format:**
+  ```json
+  {
+    "trip_id": "...",
+    "driver_response": "accept" | "reject"
+  }
+  ```
 
-### 5. Driver Update Trip Status WebSocket
-**WebSocket URL:** `ws/trips/driver/status/update/<str:trip_id>/`
+- **Receive Format:**
+  - If **rejected**:
+    ```json
+    {
+      "type": "trip_rejected",
+      "message": "Trip {trip_id} rejected"
+    }
+    ```
+  - If **accepted**:
+    ```json
+    {
+      "type": "trip_status_update",
+      "message": "..."
+    }
+    ```
 
-**Purpose:** Allows drivers to update the status of ongoing trips.
+</details>
 
-**Authentication:** Driver only
+---
 
-**Send data format:**
-```json
-{
-    "trip_status": "in_progress" | "arrived at pickup" | "completed" | "cancelled" | "arrived at destination"
-}
+<details>
+<summary><strong>3. Driver Update Trip Status WebSocket</strong></summary>
 
-**Receive data format (if payment is cash and not yet paid):**
-{
-    "payment_status": "arrived at pickup",
-    "trip_id": string,
-    "message": "You must collect payment from user before pickup"
-}
+- **URL:**  
+  `wss://{base_url}/ws/trips/driver/status/<str:trip_id>/`
 
-### 6. User Get Trip Status WebSocket
-**WebSocket URL:** `ws/trips/user/status/{trip_id}/`
+- **Purpose:**  
+  Driver updates the trip status in real time
 
-**Purpose:** Allows users to receive real-time updates on trip status.
+- **Authentication:**  
+  Driver only
 
-**Authentication:** User only
+- **Instruction:**  
+  Driver must be online
 
-**Send data format:** None required
+- **Send Format:**
+  ```json
+  {
+    "trip_id": "...",
+    "status": "in progress" | "arrived at pickup" | "completed" | "cancelled" | "arrived at destination" | "picked up"
+  }
+  ```
 
-**Receive data format (if driver arrived at pickup and payment is cash):**
-{
-    "payment_status": "arrived at pickup",
-    "trip_id": string,
-    "message": "You must make payment before trip starts"
-}
+- **Receive Format:**
+  - If **payment method is cash and not yet paid**:
+    ```json
+    {
+      "type": "trip_payment_update",
+      "message": "..."
+    }
+    ```
+  - Else:
+    ```json
+    {
+      "type": "trip_status_update",
+      "message": "..."
+    }
+    ```
 
-**Recieve data format (status update):**
-```json
-{
-    "trip_id": string,
-    "trip_status": "in_progress" | "arrived at destination" | "completed" | "cancelled"
-}
-```
+</details>
+
+---
+
+## 👥 User WebSocket Endpoints
+
+<details>
+<summary><strong>1. User Get Available Drivers</strong></summary>
+
+- **URL:**  
+  `wss://{base_url}/ws/trips/drivers/all/`
+
+- **Purpose:**  
+  User fetches nearby drivers based on their current location
+
+- **Authentication:**  
+  User only
+
+- **Instruction:**  
+  - Use Google Maps API to extract user's current location  
+  - Send coordinates to socket
+
+- **Send Format:**
+  ```json
+  {
+    "user_latitude": float,
+    "user_longitude": float
+  }
+  ```
+
+- **Receive Format:**
+  - If no drivers:
+    ```json
+    {
+      "type": "nearest_drivers",
+      "nearest_drivers": []
+    }
+    ```
+
+  - Else:
+    ```json
+    {
+      "type": "nearest_drivers",
+      "nearest_drivers": [
+        {
+          "driver": {
+            "id": "...",
+            "name": "...",
+            "email": "...",
+            "phone": "...",
+            "vehicle_type": "...",
+            "rating": float,
+            "latitude": float,
+            "longitude": float,
+            "is_available": true,
+            "profile_pic": "...",
+            "car_images": ["...", "..."],
+            "number_plate": "..."
+          },
+          "route_data": {
+            "distance": "e.g. 850m or 2.1km",
+            "duration": "e.g. 5 mins"
+          }
+        }
+      ]
+    }
+    ```
+
+</details>
+
+---
+
+<details>
+<summary><strong>2. User Get Driver Location</strong></summary>
+
+- **URL:**  
+  `wss://{base_url}/ws/trips/user/location/<str:driver_id>/`
+
+- **Purpose:**  
+  User subscribes to a driver’s real-time location
+
+- **Authentication:**  
+  User only
+
+- **Instruction:**  
+  Use Google Maps API to get the user’s current coordinates
+
+- **Send Format:**
+  ```json
+  {
+    "user_latitude": float,
+    "user_longitude": float
+  }
+  ```
+
+- **Receive Format:**
+  ```json
+  {
+    "type": "driver_location_update",
+    "id": "...",
+    "name": "...",
+    "email": "...",
+    "phone": "...",
+    "vehicle_type": "...",
+    "rating": float,
+    "latitude": float,
+    "longitude": float,
+    "is_available": true,
+    "profile_pic": "...",
+    "car_images": ["...", "..."],
+    "number_plate": "...",
+    "duration": "...",
+    "distance": "..."
+  }
+  ```
+
+</details>
+
+---
+
+<details>
+<summary><strong>3. User Trip Request WebSocket</strong></summary>
+
+- **URL:**  
+  `wss://{base_url}/ws/trips/user/`
+
+- **Purpose:**  
+  Allows authenticated users to request a trip, confirm a driver, and receive trip updates in real time.
+
+- **Authentication:**  
+  User only
+
+- **Instruction:**  
+  User must be authenticated
+
+- **Send Format:**  
+  - **Create Trip**
+    ```json
+    {
+      "action": "create_trip",
+      "vehicle_type": "truck",
+      "pickup": "Ikeja, Lagos",
+      "destination": "Victoria Island, Lagos",
+      "pickup_latitude": 6.6018,
+      "pickup_longitude": 3.3515,
+      "dest_latitude": 6.4281,
+      "dest_longitude": 3.4216,
+      "load_description": "Building materials"
+    }
+    ```
+
+  - **Confirm Driver**
+    ```json
+    {
+      "action": "confirm_driver",
+      "trip_id": "trip-uuid",
+      "driver_id": "driver-id"
+    }
+    ```
+
+- **Receive Format:**
+  - **On successful trip creation:**
+    ```json
+    {
+      "type": "trip_created",
+      "trip_id": "trip-uuid",
+      "estimated_fare": 1500.0,
+      "distance": 12.5,
+      "estimated_time": "25 mins",
+      "status": "pending"
+    }
+    ```
+
+  - **If driver is unavailable:**
+    ```json
+    {
+      "type": "select_new_driver",
+      "message": "Driver is not available. Please select another driver.",
+      "available_drivers": [ ... ]
+    }
+    ```
+
+  - **If driver is confirmed and awaiting response:**
+    ```json
+    {
+      "type": "awaiting_driver_response",
+      "trip_id": "trip-uuid",
+      "status": "pending",
+      "driver_info": { ... },
+      "payment_info": {
+        "payment_method": "card",
+        "payment_status": "success",
+        "amount": 1500.0,
+        "currency": "NGN"
+      }
+    }
+    ```
+
+  - **If driver doesn't respond within timeout:**
+    ```json
+    {
+      "type": "select_new_driver",
+      "message": "Driver is not available. Please select another driver.",
+      "available_drivers": [ ... ]
+    }
+    ```
+
+  - **Real-time trip updates if driver accepts:**
+    ```json
+    {
+      "type": "trip_status_update",
+      "trip_id": "trip-uuid",
+      "status": "accepted"
+    }
+    ```
+
+</details>
+
+---
+
+<details>
+<summary><strong>4. User Get Trip Status WebSocket</strong></summary>
+
+- **URL:**  
+  `wss://{base_url}/ws/trips/status/<str:trip_id>/`
+
+- **Purpose:**  
+ User gets the trip status in real time
+
+- **Authentication:**  
+  User only
+
+- **Instruction:**  
+  User must be connected to their ongoing opened trips
+
+- **Send Format:** *None*
+
+- **Receive Format:**
+  - If **payment method is cash and not yet paid**:
+    ```json
+    {
+      "type": "trip_payment_update",
+      "message": "..."
+    }
+    ```
+  - Else:
+    ```json
+    {
+      "type": "trip_status_update",
+      "message": "..."
+    }
+    ```
+
+</details>
 
 
-## API FOR USE
-### Check Trip Status
-**URL:** `trips/<uuid:trip_id>/status/`
-**Purpose:** Returns the current status of the trip
-**json response if success**
-```json
-{"trip_status": trip.status}
-```
-**if failed:**
-```json
-{"error": "Trip not found."}
-```
+## 📂 Test References
 
-## Notes
-1. Always make your connection attempts to the socket to be a retry (max of 10)
-2. The server always send a ping update to keep the connection alive
-3. All WebSocket connections require authentication
-4. Payment must be verified before a trip can be accepted
-5. Driver has 30 seconds to respond to a trip request
-6. For card payments, payment must be successful before a driver can accept the trip
-7. You can check the test directory for more references on how to make connections to the endpoints
+> 🔍 You can check the `test/` folder for test scripts that simulate frontend connections and validate the socket communication process.
+

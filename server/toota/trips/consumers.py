@@ -12,6 +12,7 @@ from authentication.models import User, Driver
 from .models import Trip
 from channels.exceptions import StopConsumer
 from payments.models import Payment
+from django.db.models import Q
 from .utils import get_route_data, find_nearest_drivers, is_peak_hour_or_festive
 
 
@@ -29,20 +30,38 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
             logger.info("User connection accepted")
-            self.ping_task = create_task(self.send_ping())
+            self.ping_task = asyncio.create_task(self.send_ping())
+            self.ping_task.add_done_callback(self._handle_task_result)
 
         else:
             logger.warning("User connection rejected")
             await self.close()
 
+    def _handle_task_result(self, task):
+        """Handle any exceptions from completed tasks"""
+        try:
+            task.result()  # This will raise the exception if the task failed
+        except asyncio.CancelledError:
+            pass  # Task was cancelled, which is expected during disconnect
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        if hasattr(self, 'ping_task'):
+        logger.info(f"Driver disconnecting with code: {close_code}")
+        
+        # Cancel ping task if it exists and is still running
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
             self.ping_task.cancel()
-        raise StopConsumer()
+        
+        # Remove from channel group
+        if hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(self.driver_group_name, self.channel_name)
+        
+        logger.info(f"User disconnected with code: {close_code}")
 
     async def receive(self, text_data):
+        if not self.driver.is_online:
+            return
         try:
             data = json.loads(text_data)
             latitude = data.get("latitude")
@@ -62,28 +81,19 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON from driver: {e}")
-            await self.send(text_data=json.dumps({"error": "Invalid JSON format"}))
+            await self.send(text_data=json.dumps({"type":"error", "message": "Invalid JSON format"}))
         except Exception as e:
             logger.error(f"Error processing driver message: {e}", exc_info=True)
-            await self.send(text_data=json.dumps({"error": "Internal server error"}))
-
+            await self.send(text_data=json.dumps({"type":"error", "message": "Internal server error"}))
 
     async def driver_location_update(self, event):
         await self.send(
             text_data=json.dumps({
-                "driver_details": event["driver_details"]
+                "type": "driver_location_update",
+                "message": "location updated successfully"
             })
         )
 
-    async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
-        try:
-            while True:
-                await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to driver {self.driver_id}")
-                await sleep(30)  # Ping every 30 seconds
-        except Exception as e:
-            logger.error(f"Ping loop stopped for driver {self.driver_id}: {e}")
 
     @database_sync_to_async
     def is_driver(self, driver):
@@ -101,39 +111,92 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             "email": driver.email,
             "phone": str(driver.phone_number),
             "vehicle_type": driver.vehicle_type,
-            "rating": float(driver.rating),
+            "rating": float(driver.average_rating),
             "latitude": driver.latitude,
             "longitude": driver.longitude,
             "is_available": driver.is_available,
             "profile_pic": driver.profile_pic.url if driver.profile_pic else None,
-            "car_image": driver.car_images.url if driver.car_images else None,
+            "car_images": [img.image.url for img in driver.car_images.all()],
+            "number_plate": driver.number_plate
         }
 
+    async def send_ping(self):
+        try:
+            while True:
+                await self.send(text_data=json.dumps({"type": "ping"}))
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)
 
 class UserGetLocationConsumer(AsyncWebsocketConsumer):
     """Gets the location of the driver and sends it to the user in real-time."""
     async def connect(self):
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
-        self.room_group_name = f"driver_{self.driver_id}"
+        self.driver_group_name = f"driver_{self.driver_id}"
 
         if self.scope["user"].is_authenticated and await self.is_passenger(self.scope["user"]):
-            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+            await self.channel_layer.group_add(self.driver_group_name, self.channel_name)
             await self.accept()
             logger.info("User connection accepted")
-            self.ping_task = create_task(self.send_ping())
+            self.ping_task = asyncio.create_task(self.send_ping())
+            self.ping_task.add_done_callback(self._handle_task_result)
         else:
             logger.warning("User connection rejected")
             await self.close()
 
+    def _handle_task_result(self, task):
+        """Handle any exceptions from completed tasks"""
+        try:
+            task.result()  # This will raise the exception if the task failed
+        except asyncio.CancelledError:
+            pass  # Task was cancelled, which is expected during disconnect
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        if hasattr(self, 'ping_task'):
+        logger.info(f"User disconnecting with code: {close_code}")
+        
+        # Cancel ping task if it exists and is still running
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
             self.ping_task.cancel()
-        raise StopConsumer()
+        
+        # Remove from channel group
+        if hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(self.driver_group_name, self.channel_name)
+        
+        logger.info(f"User disconnected with code: {close_code}")
+    
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+            self.user_latitude = data.get("user_latitude")
+            self.user_longitude = data.get("user_longitude")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON from user: {e}")
+            await self.send(text_data=json.dumps({"type": "error", "message": "Invalid JSON format"}))
+        except Exception as e:
+            logger.error(f"Error processing user message: {e}", exc_info=True)
+            await self.send(text_data=json.dumps({"type": "error", "message": "Internal server error"}))
 
     async def driver_location_update(self, event):
         driver_details = event["driver_details"]
+        route_data = await asyncio.wait_for(
+                    get_route_data(self.user_latitude, self.user_longitude, driver_details['latitude'], driver_details['longitude']),
+                    timeout=20
+                )
+        driver_details["duration"] = route_data['duration']
+        driver_details["distance"] = route_data['distance']
+        
+        await self.send(
+            text_data=json.dumps({
+                "type": "driver_location_update",
+                "driver_details": event["driver_details"]
+            })
+        )
+
         await self.channel_layer.group_send(
             "user_{}".format(self.scope["user"].id),
             {
@@ -141,28 +204,22 @@ class UserGetLocationConsumer(AsyncWebsocketConsumer):
                 "driver_details": driver_details
             }
         )
-        await self.send(
-            text_data=json.dumps({
-                "driver_details": event["driver_details"]
-            })
-        )
-
-    async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
-        try:
-             while True:
-                  await self.send(text_data=json.dumps({"type": "ping"}))
-                  logger.debug(f"Ping sent to user {self.scope['user'].id}")
-                  await sleep(30)  # Ping every 30 seconds
-
-       
-        except Exception as e:
-            logger.error(f"Ping loop stopped for user {self.scope['user'].id}: {e}")
 
     @database_sync_to_async
     def is_passenger(self, user):
         return User.objects.filter(id=user.id).exists()
 
+    async def send_ping(self):
+        try:
+            while True:
+                await self.send(text_data=json.dumps({"type": "ping"}))
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)
+
+        
 class TripRequestConsumer(AsyncWebsocketConsumer):
     """Handles trip requests from users in real-time."""
 
@@ -175,7 +232,8 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                 await self.channel_layer.group_add(self.user_group_name, self.channel_name)
                 await self.accept()
                 logger.info("User connection accepted")
-                self.ping_task = create_task(self.send_ping())
+                self.ping_task = asyncio.create_task(self.send_ping())
+                self.ping_task.add_done_callback(self._handle_task_result)
 
             else:
                 logger.warning("User connection rejected")
@@ -184,13 +242,27 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error during connect: {e}", exc_info=True)
             await self.close()
 
+    def _handle_task_result(self, task):
+        """Handle any exceptions from completed tasks"""
+        try:
+            task.result()  # This will raise the exception if the task failed
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass  # Task was cancelled, which is expected during disconnect
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+    
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        logger.info(f"User disconnected with code: {close_code}")
-        if hasattr(self, 'ping_task'):
+        logger.info(f"User disconnecting with code: {close_code}")
+        
+        # Cancel ping task if it exists and is still running
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
             self.ping_task.cancel()
-        raise StopConsumer()
+        
+        # Remove from channel group
+        if hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+        
+        logger.info(f"User disconnected with code: {close_code}")
 
     async def receive(self, text_data):
         try:
@@ -205,20 +277,18 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                 vehicle_type = data.get("vehicle_type")
                 pickup = data.get("pickup")
                 destination = data.get("destination")
-                pickup_lat = data.get("pickup_lat")
-                pickup_lon = data.get("pickup_lon")
-                dest_lat = data.get("dest_lat")
-                dest_lon = data.get("dest_lon")
+                pickup_latitude = data.get("pickup_latitude")
+                pickup_longitude = data.get("pickup_longitude")
+                dest_latitude = data.get("dest_latitude")
+                dest_longitude = data.get("dest_longitude")
                 load_description = data.get("load_description", "")
 
                 route_data = await asyncio.wait_for(
-                    database_sync_to_async(get_route_data)(pickup_lat, pickup_lon, dest_lat, dest_lon),
-                    timeout=10
+                    get_route_data(pickup_latitude, pickup_longitude, dest_latitude, dest_longitude),
+                    timeout=20
                 )
-                logger.info(f"Route data received: {route_data}")
-
-                distance_km = route_data.get("distance_km", 0.0)
-                duration_str = route_data.get("duration", "0 min")
+                distance = route_data['distance']
+                duration = route_data['duration']
 
                 def parse_duration_to_minutes(duration_str):
                     try:
@@ -234,59 +304,49 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                             total_minutes += float(seconds.group(1)) / 60
                         return total_minutes
                     except Exception as e:
-                        logger.error(f"Failed to parse duration '{duration_str}': {e}")
+                        logger.error(f"Failed to parse duration '{duration}': {e}")
                         return 0.0
 
-                estimated_time_minutes = parse_duration_to_minutes(duration_str)
-                duration_formatted = duration_str
+                estimated_time_minutes = parse_duration_to_minutes(duration)
 
                 trip = await database_sync_to_async(Trip.objects.create)(
                     user=self.user,
                     vehicle_type=vehicle_type,
                     pickup=pickup,
                     destination=destination,
-                    pickup_lat=pickup_lat,
-                    pickup_long=pickup_lon,
-                    dest_lat=dest_lat,
-                    dest_long=dest_lon,
+                    pickup_latitude=pickup_latitude,
+                    pickup_longitude=pickup_longitude,
+                    dest_latitude=dest_latitude,
+                    dest_longitude=dest_longitude,
                     load_description=load_description
                 )
 
-                fare = trip.calculate_fare(distance_km, estimated_time_minutes, surge)
+                fare = trip.calculate_fare(distance, estimated_time_minutes, surge)
                 trip.accepted_fare = fare
                 await database_sync_to_async(trip.save)()
 
-                available_drivers = await self.get_available_drivers(trip)
                 user_data = await self.get_user_details(self.user)
 
                 response_data = {
-                    "message": "Trip created successfully - select a driver",
+                    "type": "trip_created",
                     "trip_id": str(trip.id),
                     "estimated_fare": fare,
-                    "distance_km": distance_km,
-                    "estimated_time": duration_formatted,
-                    "pickup": pickup,
-                    "destination": destination,
-                    "vehicle_type": vehicle_type,
-                    "load_description": load_description,
-                    "user_info": user_data,
-                    "available_drivers": available_drivers,
+                    "distance": distance,
+                    "estimated_time": duration,
                     "status": "pending"
                 }
-                logger.info(f"Sending response: {response_data}") 
                 await self.send(text_data=json.dumps(response_data))
 
             except asyncio.TimeoutError:
                 logger.error("Timeout getting route data")
-                await self.send(text_data=json.dumps({"error": "Route calculation timed out"}))
+                await self.send(text_data=json.dumps({"type": "error", "message": "Route calculation timed out"}))
             except Exception as e:
                 logger.error(f"Error creating trip: {e}", exc_info=True)
-                await self.send(text_data=json.dumps({"error": "Failed to create trip"}))
+                await self.send(text_data=json.dumps({"type": "error", "message": "Failed to create trip"}))
 
         elif action == "confirm_driver":
             try:
                 trip_id = data.get("trip_id")
-                print(f"this is the trip id: {trip_id}")
                 selected_driver_id = data.get("driver_id")
 
                 trip = await self.get_trip(trip_id)
@@ -294,76 +354,66 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                 driver = await self.get_driver(selected_driver_id)
 
                 if trip and driver and trip.status == "pending":
-
-                    payment = await asyncio.wait_for(
-                        self.get_payment_for_trip(trip_id),
-                        timeout=10
-                    )
-
-                    if not payment:
-                        await self.send(text_data=json.dumps({"error": "Payment not found. Please complete payment before requesting a driver."}))
-                        return
-
-                    if payment.payment_method == "card" and (payment.status != "success" or payment.amount != trip.accepted_fare or not trip.is_paid):
-                        await self.send(text_data=json.dumps({"error": "Card payment not completed. Please complete payment before requesting a driver."}))
-                        return
-
-                    trip_details = await self.get_trip_details(trip)
-                    driver_details = await self.get_driver_details(driver)
-                    trip_user = await sync_to_async(lambda: trip.user)()
-                    user_details = await self.get_user_details(trip_user)
-
-                    await self.send(text_data=json.dumps({
-                        "message": "Awaiting driver response",
-                        "trip_id": str(trip.id),
-                        "status": "pending",
-                        "driver_info": driver_details,
-                        "payment_info": {
-                            "payment_method": payment.payment_method,
-                            "payment_status": payment.status,
-                            "amount": float(payment.amount),
-                            "currency": payment.currency,
-                        }
-                    }))
-
-                    # Send driver notification
-                    await self.channel_layer.group_send(
-                        f"driver_{selected_driver_id}",
-                        {
-                            "type": "trip_request_notification",
-                            "data": {
-                                "trip_id": str(trip.id),
-                                "distance_km": trip_details["distance_km"],
-                                "estimated_time": trip_details["estimated_time"],
-                                "pickup": trip.pickup,
-                                "destination": trip.destination,
-                                "vehicle_type": trip.vehicle_type,
-                                "load_description": trip.load_description,
-                                "user_info": user_details,
-                                "payment_info": {
-                                    "payment_method": payment.payment_method,
-                                    "payment_status": payment.status,
-                                    "amount": float(payment.amount),
-                                    "currency": payment.currency,
-                                }
-                            }
-                        }
-                    )
-
-                    try:
-                        await self.await_driver_response(trip_id=str(trip.id), selected_driver_id=selected_driver_id)
-                    except asyncio.TimeoutError:
-                        logger.warning(f"No driver response for trip {trip_id} after 30s")
-                        trip.driver = None
-                        await self.save_trip(trip)
+                    if not driver.is_available or not driver.is_online:
                         available_drivers = await self.get_available_drivers(trip)
                         await self.send(text_data=json.dumps({
-                            "message": "Driver did not respond - select another driver",
-                            "trip_id": str(trip.id),
-                            "status": "pending",
+                            "type": "select_new_driver",
+                            "message": "Driver is not available. Please select another driver.",
                             "available_drivers": available_drivers
                         }))
+                    else:
 
+                        payment = await self.get_payment_for_trip(trip_id)           
+
+                        if not payment:
+                            await self.send(text_data=json.dumps({"type": "error", "message": "Payment not found. Please complete payment before requesting a driver."}))
+                            return
+
+                        if payment.payment_method != "cash" and (payment.status != "success" or payment.amount != trip.accepted_fare or not trip.is_paid):
+                            await self.send(text_data=json.dumps({"type": "error", "message": "Card payment not completed. Please complete payment before requesting a driver."}))
+                            return
+
+                        trip_details = await self.get_trip_details(trip)
+                        driver_details = await self.get_driver_details(driver)
+                        trip_user = await sync_to_async(lambda: trip.user)()
+                        user_details = await self.get_user_details(trip_user)
+
+                        await self.send(text_data=json.dumps({
+                            "type": "awaiting_driver_response",
+                            "trip_id": str(trip.id),
+                            "status": "pending",
+                            "driver_info": driver_details,
+                            "payment_info": {
+                                "payment_method": payment.payment_method,
+                                "payment_status": payment.status,
+                                "amount": float(payment.amount),
+                                "currency": payment.currency,
+                            }
+                        }))
+
+                        # Send driver notification
+                        await self.channel_layer.group_send(
+                            f"driver_{selected_driver_id}",
+                            {
+                                "type": "trip_request_notification",
+                                "data": {
+                                    "trip_id": str(trip.id),
+                                    "pickup": trip.pickup,
+                                    "destination": trip.destination,
+                                    "vehicle_type": trip.vehicle_type,
+                                    "load_description": trip.load_description,
+                                    "user_info": user_details,
+                                    "payment_info": {
+                                        "payment_method": payment.payment_method,
+                                        "payment_status": payment.status,
+                                        "amount": float(payment.amount),
+                                        "currency": payment.currency,
+                                    }
+                                }
+                            }
+                        )
+
+                        await self.await_driver_response(trip_id=str(trip.id), selected_driver_id=selected_driver_id)
                 else:
                     await self.send(text_data=json.dumps({"error": "Invalid trip or driver"}))
 
@@ -399,10 +449,10 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
                 available_drivers = await self.get_available_drivers(trip)
 
                 # Notify the client (rider) that the driver didn't respond
+                available_drivers = await self.get_available_drivers(trip)
                 await self.send(text_data=json.dumps({
-                    "message": "Driver did not respond - select another driver",
-                    "trip_id": str(trip.id),
-                    "status": "pending",
+                    "type": "select_new_driver",
+                    "message": "Driver is not available. Please select another driver.",
                     "available_drivers": available_drivers
                 }))
 
@@ -415,36 +465,43 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error in await_driver_response for trip {trip_id}: {e}", exc_info=True)
 
-
-    async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
-        try:
-            while True:
-                await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to user {self.user_id}")
-                await sleep(30)  # Ping every 30 seconds
-        except Exception as e:
-            logger.error(f"Ping loop stopped for user {self.user_id}: {e}")
-
-    async def trip_status_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "trip_status_update",
-            "trip_id": event.get("trip_id"), 
-            "status": event.get("status"),
-            "driver_info": event.get("driver_info", {}),
-            "trip_details": event.get("trip_details", {}),
-            "payment_info": event.get("payment_info", {})
-        }))
-
     async def trip_request_notification(self, event):
         await self.send(text_data=json.dumps({
             "type": "new_trip_request",
             "trip_details": event["data"]
         }))
 
-    @database_sync_to_async
-    def is_user(self, user):
-        return User.objects.filter(id=user.id).exists()
+    async def trip_rejected(self, event):
+        trip_id = event.get("trip_id")
+        selected_driver_id = event.get("driver_id")
+        trip = await self.get_trip(trip_id)
+
+        if trip.status == "pending":
+            # Reset the assigned driver
+            trip.driver = None
+            await self.save_trip(trip)
+
+            # Get a fresh list of available drivers
+            available_drivers = await self.get_available_drivers(trip)
+
+            # Notify the rider to select another driver
+            await self.send(text_data=json.dumps({
+                "type": "select_new_driver",
+                "message": "Driver is not available. Please select another driver.",
+                "available_drivers": available_drivers
+            }))
+
+            logger.info(f"Driver {selected_driver_id} did not respond for trip {trip_id}. Trip reset.")
+        else:
+            logger.info(f"Driver {selected_driver_id} responded for trip {trip_id} with status '{trip.status}'.")
+
+
+    async def trip_status_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "trip_status_update",
+            "trip_id": event.get("trip_id"), 
+            "status": event.get("status"),
+        }))
 
     @database_sync_to_async
     def get_user_details(self, user):
@@ -453,6 +510,10 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
             "name": f"{user.first_name} {user.last_name}",
             "phone": str(user.phone_number) if user.phone_number else None,
         }
+
+    @database_sync_to_async
+    def is_user(self, user):
+        return User.objects.filter(id=user.id).exists()
 
     @database_sync_to_async
     def get_trip(self, trip_id):
@@ -474,23 +535,18 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_trip_details(self, trip):
-        route_data = get_route_data(trip.pickup_lat, trip.pickup_long, trip.dest_lat, trip.dest_long)
-        distance_km = route_data.get("distance_km", 0.0)
-        duration_str = route_data.get("duration", "0 min")
         return {
             "id": str(trip.id),
             "pickup": trip.pickup,
             "destination": trip.destination,
-            "pickup_lat": trip.pickup_lat,
-            "pickup_long": trip.pickup_long,
-            "dest_lat": trip.dest_lat,
-            "dest_long": trip.dest_long,
+            "pickup_latitude": trip.pickup_latitude,
+            "pickup_longitude": trip.pickup_longitude,
+            "dest_latitude": trip.dest_latitude,
+            "dest_longitude": trip.dest_longitude,
             "vehicle_type": trip.vehicle_type,
             "load_description": trip.load_description or "",
             "fare": float(trip.accepted_fare) if trip.accepted_fare else None,
             "status": trip.status,
-            "distance_km": distance_km,
-            "estimated_time": duration_str,
             "created_at": trip.created_at.isoformat() if hasattr(trip, 'created_at') else None
         }
 
@@ -506,15 +562,30 @@ class TripRequestConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_available_drivers(self, trip):
-        drivers = find_nearest_drivers(trip.pickup_lat, trip.pickup_long, [trip.vehicle_type])
-        return [driver_data["driver"] for driver_data in drivers]
+        drivers = find_nearest_drivers(trip.pickup_latitude, trip.pickup_longitude, [trip.vehicle_type])
+        return drivers
 
     @database_sync_to_async
     def get_payment_for_trip(self, trip_id):
+        return (
+            Payment.objects
+            .filter(
+                trip_id=trip_id,
+                user=self.user
+            )
+            .filter(Q(status="success") | Q(payment_method="cash"))
+            .first()
+        )
+
+    async def send_ping(self):
         try:
-            return Payment.objects.get(trip_id=trip_id, user=self.user)
-        except Payment.DoesNotExist:
-            return None
+            while True:
+                await self.send(text_data=json.dumps({"type": "ping"}))
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)
 
 
 class DriverTripConsumer(AsyncWebsocketConsumer):
@@ -525,43 +596,52 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
         
         if user.is_authenticated and await self.is_driver(user):
             self.driver = user
-            self.room_group_name = f"driver_{self.driver.id}"
+            self.driver_group_name = f"driver_{self.driver.id}"
             
-            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+            await self.channel_layer.group_add(self.driver_group_name, self.channel_name)
             await self.accept()
 
             logger.info(f"Driver {self.driver.id} connection accepted")
             
             # Start heartbeat / ping loop
-            self.ping_task = create_task(self.send_ping())
-            
-            # Send welcome message
-            await self.send(text_data=json.dumps({
-                "message": "Connection established",
-                "status": "connected",
-                "driver_id": str(self.driver.id)
-            }))
+            self.ping_task = asyncio.create_task(self.send_ping())
+            self.ping_task.add_done_callback(self._handle_task_result)
 
         else:
             logger.warning("Driver connection rejected")
             await self.close(code=4403)
 
+    def _handle_task_result(self, task):
+        """Handle any exceptions from completed tasks"""
+        try:
+            task.result()  # This will raise the exception if the task failed
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass  # Task was cancelled, which is expected during disconnect
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+
     async def disconnect(self, close_code):        
-        if hasattr(self, 'room_group_name'):
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        logger.info(f"Driver {self.driver.id} disconnected with code: {close_code}")
-        if hasattr(self, 'ping_task'):
+        logger.info(f"Driver disconnecting with code: {close_code}")
+        
+        # Cancel ping task if it exists and is still running
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
             self.ping_task.cancel()
-        raise StopConsumer()
+        
+        # Remove from channel group
+        if hasattr(self, 'driver_group_name'):
+            await self.channel_layer.group_discard(self.driver_group_name, self.channel_name)
+        
+        logger.info(f"Driver disconnected with code: {close_code}")
 
     async def receive(self, text_data):
+        if not self.driver.is_available or not self.driver.is_online:
+            return
         try:
             data = json.loads(text_data)
         except json.JSONDecodeError:
             return
-
         trip_id = data.get("trip_id")
-        driver_response_status = data.get("driver_response_status")
+        driver_response = data.get("driver_response")
 
         if not trip_id:
             await self.send(text_data=json.dumps({"error": "trip_id is required"}))
@@ -572,23 +652,28 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({"error": "Trip not found"}))
             return
 
-        if driver_response_status == "rejected":
+        if driver_response == "reject":
             user_id = (await sync_to_async(lambda: trip.user.id)())
             await self.channel_layer.group_send(
                 f"user_{user_id}",
                 {
                     "type": "trip_rejected",
-                    "status": "rejected",
-                    "trip_id": trip_id
+                    "trip_id": str(trip.id),
+                    "driver_id": str(self.driver.id)
                 }
             )
 
-        elif driver_response_status == "accepted":
+            await self.send(text_data=json.dumps({
+                "type": "trip_rejected",
+                "message": f"Trip {trip.id} rejected"
+            }))
+
+        elif driver_response == "accept":
             user_id = (await sync_to_async(lambda: trip.user.id)())
 
             payment = await self.get_payment_for_trip(trip_id)
 
-            if payment and payment.payment_method == "card" and payment.status != "success" and not trip.is_paid:
+            if payment and payment.payment_method != "cash" and payment.status != "success" and not trip.is_paid:
                 await self.send(text_data=json.dumps({
                     "error": "Card payment not completed. Cannot accept trip."
                 }))
@@ -601,65 +686,26 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
             await self.save_driver(self.driver)
             await self.save_trip(trip)
 
-            trip_details = await self.get_trip_details(trip)
-            driver_details = await self.get_driver_details(self.driver)
-
-            payment_info = {}
-            if payment:
-                payment_info = {
-                    "payment_method": payment.payment_method,
-                    "payment_status": payment.status,
-                    "amount": float(payment.amount),
-                    "currency": payment.currency,
-                }
-
             await self.channel_layer.group_send(
                 f"user_{user_id}",
                 {
                     "type": "trip_status_update",
                     "trip_id": str(trip.id),
                     "status": "accepted",
-                    "driver_info": driver_details,
-                    "trip_details": trip_details,
-                    "payment_info": payment_info
                 }
             )
-
-            await self.send(text_data=json.dumps({"message": f"Trip {trip.id} accepted"}))
+            await self.send(text_data=json.dumps({"type": "trip_status_update", "message": f"Trip {trip.id} accepted"}))
 
         else:
-            logger.warning(f"Unknown driver response status: {driver_response_status}")
+            logger.warning(f"Unknown driver response status: {driver_response}")
             await self.send(text_data=json.dumps({
-                "error": f"Unknown response status: {driver_response_status}"
+                "error": f"Unknown response status: {driver_response}"
             }))
 
-    async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
-        try:
-            while True:
-                await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to driver {self.driver.id}")
-                await sleep(30)  # Ping every 30 seconds
-        except Exception as e:
-            logger.error(f"Ping loop stopped for driver {self.driver.id}: {e}")
-
-    async def trip_rejected(self, event):
-        await self.send(text_data=json.dumps({
-            "status": event["status"],
-            "trip_id": event.get("trip_id")
-        }))
-
-    async def trip_status_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "trip_status_update",
-            "trip_id": event.get("trip_id"), 
-            "status": event.get("status"),
-            "driver_info": event.get("driver_info", {}),
-            "trip_details": event.get("trip_details", {}),
-            "payment_info": event.get("payment_info", {})
-        }))
 
     async def trip_request_notification(self, event):
+        if not self.driver.is_available or not self.driver.is_online:
+            return
         await self.send(text_data=json.dumps({
             "type": "new_trip_request",
             "trip_details": event["data"]
@@ -681,128 +727,136 @@ class DriverTripConsumer(AsyncWebsocketConsumer):
         driver.save()
 
     @database_sync_to_async
-    def get_trip_details(self, trip):
-        route_data = get_route_data(trip.pickup_lat, trip.pickup_long, trip.dest_lat, trip.dest_long)
-        distance_km = route_data.get("distance_km", 0.0)
-        duration_str = route_data.get("duration", "0 min")
-        return {
-            "id": str(trip.id),
-            "pickup": trip.pickup,
-            "destination": trip.destination,
-            "pickup_lat": trip.pickup_lat,
-            "pickup_long": trip.pickup_long,
-            "dest_lat": trip.dest_lat,
-            "dest_long": trip.dest_long,
-            "vehicle_type": trip.vehicle_type,
-            "load_description": trip.load_description or "",
-            "fare": float(trip.accepted_fare) if trip.accepted_fare else None,
-            "status": trip.status,
-            "distance_km": distance_km,
-            "estimated_time": duration_str,
-            "created_at": trip.created_at.isoformat() if hasattr(trip, 'created_at') else None
-        }
-
-    @database_sync_to_async
-    def get_driver_details(self, driver):
-        return {
-            "id": str(driver.id),
-            "name": f"{driver.first_name} {driver.last_name}".strip() or driver.email,
-            "first_name": driver.first_name,
-            "last_name": driver.last_name,
-            "phone": str(driver.phone_number) if driver.phone_number else None,
-            "vehicle_type": driver.vehicle_type,
-            "rating": float(driver.rating) if driver.rating else None,
-        }
-
-    @database_sync_to_async
     def get_available_drivers(self, trip):
         drivers = find_nearest_drivers(trip.pickup_lat, trip.pickup_long, [trip.vehicle_type])
-        return [driver_data["driver"] for driver_data in drivers]
+        return drivers
 
     @database_sync_to_async
     def get_payment_for_trip(self, trip_id):
-        try:
-            return Payment.objects.get(trip_id=trip_id)
-        except Payment.DoesNotExist:
-            return None
+        return (
+            Payment.objects
+            .filter(
+                trip_id=trip_id,
+            )
+            .filter(Q(status="success") | Q(payment_method="cash"))
+            .first()
+        )
+
 
     @database_sync_to_async
     def is_driver(self, driver):
         return Driver.objects.filter(id=driver.id).exists()
+    
+    async def send_ping(self):
+        try:
+            while True:
+                await self.send(text_data=json.dumps({"type": "ping"}))
+                await asyncio.sleep(30)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass
+        except Exception as e:
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)
 
-class DriverUpdateTripStatusConsumer(AsyncWebsocketConsumer):
-    """(Driver socket): updates the status of the trip in real-time, notifying both driver and user."""
+class UpdateTripStatusConsumer(AsyncWebsocketConsumer):
+    """Updates the status of the trip in real-time, notifying both driver and user."""
+    
     async def connect(self):
         self.trip_id = self.scope["url_route"]["kwargs"]["trip_id"]
-        if self.scope["user"].is_authenticated and await self.is_driver(self.scope['user']):
+        user = self.scope["user"]
+
+        if user.is_authenticated:
             self.trip_group_name = f'trip_{self.trip_id}'
             await self.channel_layer.group_add(self.trip_group_name, self.channel_name)
             await self.accept()
-            logger.info("Driver connection accepted")
-            self.ping_task = create_task(self.send_ping())
 
+            if await self.is_driver(user):
+                self.user_role = "driver"
+                logger.info("Driver connection accepted")
+            else:
+                self.user_role = "user"
+                logger.info("User connection accepted")
+            self.ping_task = asyncio.create_task(self.send_ping())
+            self.ping_task.add_done_callback(self._handle_task_result)
         else:
-            logger.warning("Driver connection rejected")
+            logger.warning("Unauthenticated connection rejected")
             await self.close(code=4403)
 
+    def _handle_task_result(self, task):
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+
     async def disconnect(self, close_code):
+        logger.info(f"User disconnecting with code: {close_code}")
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
+            self.ping_task.cancel()
         if hasattr(self, 'trip_group_name'):
             await self.channel_layer.group_discard(self.trip_group_name, self.channel_name)
-            logger.info(f"Driver disconnected with code: {close_code}")
-        if hasattr(self, 'ping_task'):
-            self.ping_task.cancel()
-        raise StopConsumer()
+        logger.info(f"User disconnected with code: {close_code}")
 
     async def receive(self, text_data):
+        if self.user_role == 'driver' and not self.scope["user"].is_online:
+            return
+
         try:
             data = json.loads(text_data)
         except json.JSONDecodeError:
             return
+
         self.trip = await self.get_trip(self.trip_id)
         if self.trip is None:
             await self.send(text_data=json.dumps({
-                "error": "Trip not found"
+                "type": "error",
+                "message": "Trip not found"
             }))
             return
+
         payment = await self.get_payment_for_trip(self.trip_id)
         if payment is None:
             await self.send(text_data=json.dumps({
-                "error": "Payment not found"
+                "type": "error",
+                "message": "Payment not found"
             }))
             return
 
-        trip_status = data.get('trip_status')
+        trip_status = data.get('status')
 
-        await self.update_trip_status(trip_status)
-        if trip_status == "arrived at pickup" and payment.payment_method == "cash" and payment.status == "pending":
-            await self.channel_layer.group_send(
-                self.trip_group_name,
-                {
-                    'type': 'trip_payment_update',
-                    'payment_status': trip_status,
-                    'trip_id': self.trip_id,
-                })
-        else:
-            await self.channel_layer.group_send(
+        if self.user_role == "driver":
+            await self.update_trip_status(trip_status)
+
+            if trip_status == "arrived at pickup" and payment.payment_method == "cash" and payment.status == "pending":
+                await self.update_trip_status(trip_status)
+                await self.channel_layer.group_send(
+                    self.trip_group_name,
+                    {
+                        'type': 'trip_payment_update',
+                        "payment_amount": str(payment.amount),
+                    })
+                await self.send(text_data=json.dumps({
+                    "type": "trip_payment_update",
+                    "message": f"You must collect {payment.currency}{payment.amount} from user before pickup"
+                }))
+            else:
+                await self.update_trip_status(trip_status)
+                await self.channel_layer.group_send(
                     self.trip_group_name,
                     {
                         'type': 'trip_status_update',
                         'trip_status': trip_status,
-                        'trip_id': self.trip_id
                     }
                 )
-
-    async def trip_status_update(self, event):
-        pass
-
-    async def trip_payment_update(self, event):
-        payment_status = event['payment_status']
-        trip_id = event['trip_id']
-        await self.send(text_data=json.dumps({
-            "payment_status": payment_status,
-            "trip_id": trip_id,
-            "message": "You must collect payment from user before pickup"
-        }))
+                await self.send(text_data=json.dumps({
+                    "type": "trip_status_update",
+                    "message": f"Trip status updated"
+                }))
+        else:
+            await self.send(text_data=json.dumps({
+                "type": "info",
+                "message": "User cannot update trip status"
+            }))
 
     @database_sync_to_async
     def update_trip_status(self, status):
@@ -815,28 +869,35 @@ class DriverUpdateTripStatusConsumer(AsyncWebsocketConsumer):
             return Trip.objects.get(id=trip_id)
         except Trip.DoesNotExist:
             return None
-    
+
     @database_sync_to_async
     def get_payment_for_trip(self, trip_id):
-        try:
-            return Payment.objects.get(trip_id=trip_id)
-        except Payment.DoesNotExist:
-            return None
-        
+        return (
+            Payment.objects
+            .filter(trip_id=trip_id)
+            .filter(Q(status="success") | Q(payment_method="cash"))
+            .first()
+        )
+
     @database_sync_to_async
-    def is_driver(self, driver):
-        return Driver.objects.filter(id=driver.id).exists()
-    
+    def is_driver(self, user):
+        return Driver.objects.filter(id=user.id).exists()
+
     async def send_ping(self):
-        """Periodically sends a ping to the client to keep the connection alive."""
         try:
             while True:
                 await self.send(text_data=json.dumps({"type": "ping"}))
-                logger.debug(f"Ping sent to driver {self.scope['user'].id}")
-                await sleep(30)  # Ping every 30 seconds
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            logger.error(f"Ping loop stopped for driver {self.scope['user'].id}: {e}")
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)
 
+    async def trip_status_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "trip_status_update",
+            "message": f"status updated to {event['trip_status']}"
+        }))
 
 
 class UserGetAvailableDrivers(AsyncWebsocketConsumer):
@@ -851,7 +912,9 @@ class UserGetAvailableDrivers(AsyncWebsocketConsumer):
                 await self.channel_layer.group_add(self.user_group_name, self.channel_name)
                 await self.accept()
                 logger.info(f"{self.user} connection accepted")
-                self.ping_task = create_task(self.send_ping())
+                self.ping_task = asyncio.create_task(self.send_ping())
+                # Keep track of the task to properly cancel it later
+                self.ping_task.add_done_callback(self._handle_task_result)
             else:
                 logger.warning("User connection rejected")
                 await self.close(code=4403)
@@ -859,13 +922,27 @@ class UserGetAvailableDrivers(AsyncWebsocketConsumer):
             logger.error(f"Error during connect: {e}", exc_info=True)
             await self.close()
 
+    def _handle_task_result(self, task):
+        """Handle any exceptions from completed tasks"""
+        try:
+            task.result()  # This will raise the exception if the task failed
+        except asyncio.CancelledError:
+            pass  # Task was cancelled, which is expected during disconnect
+        except Exception as e:
+            logger.error(f"Task failed with exception: {e}", exc_info=True)
+
     async def disconnect(self, close_code):
+        logger.info(f"User disconnecting with code: {close_code}")
+        
+        # Cancel ping task if it exists and is still running
+        if hasattr(self, 'ping_task') and not self.ping_task.done():
+            self.ping_task.cancel()
+        
+        # Remove from channel group
         if hasattr(self, 'user_group_name'):
             await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+        
         logger.info(f"User disconnected with code: {close_code}")
-        if hasattr(self, 'ping_task'):
-            self.ping_task.cancel()
-        raise StopConsumer()
 
     async def receive(self, text_data):
         try:
@@ -876,7 +953,6 @@ class UserGetAvailableDrivers(AsyncWebsocketConsumer):
 
         user_latitude = data.get('user_latitude')
         user_longitude = data.get('user_longitude')
-        self.user_location = (user_latitude, user_longitude)
         vehicle_type = data.get('vehicle_type', [])
 
         if not user_latitude or not user_longitude:
@@ -886,25 +962,42 @@ class UserGetAvailableDrivers(AsyncWebsocketConsumer):
             }))
             return
 
+        # Store location for later use
+        self.user_location = (user_latitude, user_longitude)
+        
+        # Find drivers
         drivers = await sync_to_async(find_nearest_drivers)(user_latitude, user_longitude, vehicle_type)
         if not drivers:
             await self.send(text_data=json.dumps({
                 "type": "nearest_drivers",
-                "drivers": []
+                "nearest_drivers": []
             }))
-        else:
-            nearest_drivers = []
-            for driver in drivers:
-                route_data = await asyncio.wait_for(
-                    database_sync_to_async(get_route_data)(user_latitude, user_longitude, driver.latitude, driver.longitude),
-                    timeout=10
-                )
-                nearest_drivers.append([driver, route_data])
-            await self.send(text_data=json.dumps({
-                "type": "nearest_drivers",
-                "nearest_drivers": nearest_drivers
-            }))
+            return
 
+        # Process driver data with proper error handling
+        nearest_drivers = []
+        for driver in drivers:
+            print(driver)
+            try:
+                # Now we can call the async function directly
+                route_data = await asyncio.wait_for(
+                    get_route_data(user_latitude, user_longitude, driver['latitude'], driver['longitude']),
+                    timeout=20  # 5-second timeout per request
+                )
+                nearest_drivers.append({
+                    "driver": driver,
+                    "route_data": route_data
+                })
+            except asyncio.TimeoutError:
+                logger.warning(f"Timeout getting route data for driver ")
+            except Exception as e:
+                logger.error(f"Error processing driver: {e}", exc_info=True)
+        
+        # Send results
+        await self.send(text_data=json.dumps({
+            "type": "nearest_drivers",
+            "nearest_drivers": nearest_drivers
+        }))
 
     async def send_driver_location(self, event):
         if not hasattr(self, 'user_location'):
@@ -913,34 +1006,43 @@ class UserGetAvailableDrivers(AsyncWebsocketConsumer):
         user_lat, user_lon = self.user_location
         vehicle_type = [] 
 
-        drivers = await sync_to_async(find_nearest_drivers)(
-            user_lat, user_lon, vehicle_type
-        )
-
-        nearest_drivers = []
-        for driver in drivers:
-            route_data = await asyncio.wait_for(
-                database_sync_to_async(get_route_data)(
-                    user_lat, user_lon, driver.latitude, driver.longitude
-                ),
-                timeout=10
-            )
-            nearest_drivers.append([driver, route_data])
-
-        await self.send(text_data=json.dumps({
-            "type": "nearest_drivers",
-            "nearest_drivers": nearest_drivers
-        }))
+        try:
+            drivers = await sync_to_async(find_nearest_drivers)(user_lat, user_lon, vehicle_type)
+            
+            nearest_drivers = []
+            for driver in drivers:
+                try:
+                    # Now we can call the async function directly
+                    route_data = await asyncio.wait_for(
+                        get_route_data(user_latitude, user_longitude, driver['latitude'], driver['longitude']),
+                        timeout=20 
+                    )
+                    nearest_drivers.append({
+                        "driver": driver,
+                        "route_data": route_data
+                    })
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout getting route data for driver {driver.id}")
+                except Exception as e:
+                    logger.error(f"Error processing driver {driver.id}: {e}", exc_info=True)
+            
+            await self.send(text_data=json.dumps({
+                "type": "nearest_drivers",
+                "nearest_drivers": nearest_drivers
+            }))
+        except Exception as e:
+            logger.error(f"Error in send_driver_location: {e}", exc_info=True)
 
     @database_sync_to_async
     def is_user(self, user):
         return User.objects.filter(id=user.id).exists()
 
     async def send_ping(self):
-        """Keeps the socket alive by sending periodic pings."""
         try:
             while True:
                 await self.send(text_data=json.dumps({"type": "ping"}))
-                await sleep(30)
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            logger.error(f"Ping loop stopped: {e}")
+            logger.error(f"Ping loop stopped with error: {e}", exc_info=True)

@@ -30,7 +30,7 @@ Initiate a payment for a trip. Depending on the `payment_method` selected:
 | `trip_id`        | string | ✅       | UUID of the trip to be paid for                                              |
 | `payment_method` | string | ✅       | Payment method (`cash`, `card`, `mobile_money`, `bank_transfer`)             |
 | `currency`       | string | ✅       | Currency of the payment (`NGN`, `ZAR`, etc.)                                 |
-| `location`       | string | ✅       | location from where the user is making payment from (`ZAR`, `NG`, `GH`, `KE`)|
+| `location`       | string | ✅       | location from where the user is making payment from (`ZA`, `NG`, `GH`, `KE`)|
 
 #### **Example Request**
 ```json
@@ -190,4 +190,3 @@ Trip or payment not found.
 ## 🗒️ Notes
 - You can check the test folder for more references.
   
-

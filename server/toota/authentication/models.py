@@ -3,8 +3,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import uuid
-from cloudinary.models import CloudinaryField
 from phonenumber_field.modelfields import PhoneNumberField  # Requires django-phonenumber-field
+from cloudinary.models import CloudinaryField
 
 ###############################################################################
 # Base Manager: Shared logic for creating users
@@ -89,6 +89,24 @@ class User(AbstractCustomUser):
         return self.email
 
 ###############################################################################
+# CarImage Model: For storing multiple car images for a driver
+###############################################################################
+class CarImage(models.Model):
+    """
+    Model to store car images for a driver. Each image is linked to a specific driver.
+    """
+    driver = models.ForeignKey(
+        'Driver',
+        on_delete=models.CASCADE,
+        related_name='car_images'
+    )
+    image = CloudinaryField('image')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.driver.email} uploaded on {self.uploaded_at}"
+
+###############################################################################
 # Driver Model (updated for optional KYC fields)
 ###############################################################################
 class Driver(AbstractCustomUser):
@@ -96,6 +114,13 @@ class Driver(AbstractCustomUser):
     Driver model that extends the abstract custom user with driver-specific fields.
     For driver signup, only email and password are required. Other fields are optional.
     """
+    @property
+    def average_rating(self):
+        ratings = self.ratings.all()
+        if not ratings.exists():
+            return None
+        return round(sum(r.rating for r in ratings) / ratings.count(), 2)
+
     license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     license_expiry = models.DateField(null=True, blank=True)
     VEHICLE_CHOICES = [
@@ -109,13 +134,13 @@ class Driver(AbstractCustomUser):
     ]
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    car_images = models.ImageField(upload_to='driver_car_images/', blank=True, null=True)
     number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     is_available = models.BooleanField(default=True)
+    is_online = models.BooleanField(default=False)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
@@ -169,3 +194,4 @@ class OTP(models.Model):
         """
         expiration_time = timezone.now() - timezone.timedelta(minutes=60)
         return self.created_at < expiration_time
+
