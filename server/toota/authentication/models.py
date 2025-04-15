@@ -8,9 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core.exceptions import ValidationError
 
-###############################################################################
 # Base Manager
-###############################################################################
 class BaseCustomUserManager(BaseUserManager):
     def _create_user(self, email, password, **extra_fields):
         if not email:
@@ -34,17 +32,15 @@ class BaseCustomUserManager(BaseUserManager):
             raise ValueError(_("Superuser must have is_superuser=True."))
         return self._create_user(email, password, **extra_fields)
 
-###############################################################################
 # Abstract Base User
-###############################################################################
 class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True, max_length=255)
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    profile_pic = CloudinaryField('image')
-    phone_number = PhoneNumberField(unique=True)
-    physical_address = models.TextField()
+    first_name = models.CharField(max_length=50, null=True, blank=True, default="")
+    last_name = models.CharField(max_length=50, null=True, blank=True, default="")
+    profile_pic = CloudinaryField('image', null=True, blank=True)
+    phone_number = PhoneNumberField(unique=True, null=True, blank=True)
+    physical_address = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
@@ -56,9 +52,7 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         abstract = True
 
-###############################################################################
 # User Model
-###############################################################################
 class User(AbstractCustomUser):
     groups = models.ManyToManyField(
         'auth.Group',
@@ -80,9 +74,11 @@ class User(AbstractCustomUser):
     def __str__(self):
         return self.email
 
-###############################################################################
+# Helper function for default JSON value
+def default_car_images():
+    return []
+
 # Driver Model
-###############################################################################
 class Driver(AbstractCustomUser):
     VEHICLE_CHOICES = [
         ('MotorBike', 'MotorBike'),
@@ -93,11 +89,14 @@ class Driver(AbstractCustomUser):
         ('Bakkie', 'Bakkie'),
         ('8 ton Truck', '8 ton Truck'),
     ]
-    vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES)
-    vehicle_registration = models.CharField(max_length=50, unique=True)
-    car_images = models.JSONField(default=list)
+    vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
+    vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    # Changed JSONField default to use a function instead of list literal
+    car_images = models.JSONField(default=default_car_images, null=True, blank=True)
     license_image = CloudinaryField('image', null=True, blank=True)
-    vehicle_load_capacity = models.DecimalField(max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)")
+    vehicle_load_capacity = models.DecimalField(
+        max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)", null=True, blank=True
+    )
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -125,16 +124,28 @@ class Driver(AbstractCustomUser):
     objects = BaseCustomUserManager()
 
     def __str__(self):
-        return f"{self.email} - {self.vehicle_type}"
+        return f"{self.email} - {self.vehicle_type}" if self.vehicle_type else self.email
 
     def clean(self):
         super().clean()
-        if not (0.5 <= float(self.vehicle_load_capacity) <= 10.0):
-            raise ValidationError({'vehicle_load_capacity': _("Vehicle load capacity must be between 0.5 and 10 tons.")})
+        if self.vehicle_load_capacity is not None:
+            if not (0.5 <= float(self.vehicle_load_capacity) <= 10.0):
+                raise ValidationError({'vehicle_load_capacity': _("Vehicle load capacity must be between 0.5 and 10 tons.")})
+        if self.vehicle_registration:
+            if Driver.objects.exclude(id=self.id).filter(vehicle_registration=self.vehicle_registration).exists():
+                raise ValidationError({'vehicle_registration': _("This vehicle registration number is already in use.")})
 
-###############################################################################
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Ensure clean() is called before saving
+        super().save(*args, **kwargs)
+
+    def update_location(self, latitude, longitude):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.current_location = f"Latitude: {latitude}, Longitude: {longitude}"
+        self.save()
+
 # OTP Model
-###############################################################################
 class OTP(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='otp', null=True, blank=True)
     driver = models.OneToOneField(Driver, on_delete=models.CASCADE, related_name='otp', null=True, blank=True)
@@ -147,9 +158,4 @@ class OTP(models.Model):
             return f"OTP for {self.user.email}"
         elif self.driver:
             return f"OTP for {self.driver.email}"
-        return "Unassigned OTP"
-
-    def is_expired(self):
-        expiration_time = timezone.now() - timezone.timedelta(minutes=60)
-        return self.created_at < expiration_time
-
+        return f"OTP {self.code}"
