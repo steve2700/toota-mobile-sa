@@ -6,7 +6,8 @@ import cloudinary
 # from rest_framework_simplejwt.settings import api_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-MEDIA_URL = 'https://res.cloudinary.com/<your-cloud-name>/'
+CLOUDINARY_NAME = config('CLOUDINARY_CLOUD_NAME')
+MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_NAME}/'
 # Load sensitive information from .env
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=True, cast=bool)
