@@ -3,6 +3,8 @@ from datetime import timedelta
 from decouple import config
 import dj_database_url
 import cloudinary
+import os
+
 # from rest_framework_simplejwt.settings import api_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,7 +12,7 @@ CLOUDINARY_NAME = config('CLOUDINARY_CLOUD_NAME')
 MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_NAME}/'
 # Load sensitive information from .env
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = [
@@ -54,7 +56,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'toota.urls'
 
 TEMPLATES = [
@@ -125,16 +126,19 @@ REST_FRAMEWORK = {
 
 # Cloudinary settings
 cloudinary.config(
-    cloudinary_url=config('CLOUDINARY_URL'),
-    secure=True,
+    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+    api_key=config('CLOUDINARY_API_KEY'),
+    api_secret=config('CLOUDINARY_API_SECRET'),
+    secure=True
 )
+
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Database settings
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
-        conn_max_age=0,
+        conn_max_age=600,
         ssl_require=True
     )
 }
@@ -176,6 +180,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
