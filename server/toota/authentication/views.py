@@ -614,11 +614,11 @@ class DriverKYCUpdateView(APIView):
         }
     )
     def get(self, request):
-        try:
-            driver = Driver.objects.get(user=request.user)
-        except Driver.DoesNotExist:
-            return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
-        
+        driver = request.user
+
+        if not isinstance(driver, Driver):
+            return Response({"error": "You are not authorized as a driver."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = DriverKYCUpdateSerializer(driver)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -637,7 +637,7 @@ class DriverKYCUpdateView(APIView):
             openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
             openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
             openapi.Parameter('license_image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
-            openapi.Parameter('car_images', openapi.IN_FORM,  # ✅ fixed: now single file
+            openapi.Parameter('car_images', openapi.IN_FORM,
                               type=openapi.TYPE_FILE,
                               description="Car image",
                               required=True),
@@ -655,14 +655,15 @@ class DriverKYCUpdateView(APIView):
             200: openapi.Response(description="KYC updated successfully."),
             400: openapi.Response(description="Validation failed."),
             401: openapi.Response(description="Authentication required."),
+            403: openapi.Response(description="Forbidden - not a driver."),
             404: openapi.Response(description="Driver not found.")
         }
     )
     def put(self, request):
-        try:
-            driver = Driver.objects.get(user=request.user)
-        except Driver.DoesNotExist:
-            return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
+        driver = request.user
+
+        if not isinstance(driver, Driver):
+            return Response({"error": "You are not authorized as a driver."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = DriverKYCUpdateSerializer(driver, data=request.data, context={"request": request})
         if serializer.is_valid():
@@ -670,5 +671,5 @@ class DriverKYCUpdateView(APIView):
             send_kyc_submission_email(driver.email)
             return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
