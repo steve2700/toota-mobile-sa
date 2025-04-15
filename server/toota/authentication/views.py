@@ -618,7 +618,7 @@ class DriverKYCUpdateView(APIView):
             driver = Driver.objects.get(user=request.user)
         except Driver.DoesNotExist:
             return Response({"error": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
-
+        
         serializer = DriverKYCUpdateSerializer(driver)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -627,7 +627,7 @@ class DriverKYCUpdateView(APIView):
         operation_description="""Upload or update:
         - Basic info
         - Driver's License Image
-        - Two Car Images
+        - Car Image
         - Vehicle Registration, Type, Load Capacity""",
         manual_parameters=[
             token_param,
@@ -637,20 +637,19 @@ class DriverKYCUpdateView(APIView):
             openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
             openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
             openapi.Parameter('license_image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
-            openapi.Parameter('car_images', openapi.IN_FORM, 
-                             type=openapi.TYPE_ARRAY, 
-                             items=openapi.Items(type=openapi.TYPE_FILE),
-                             description="Exactly two car images",
-                             required=True),
+            openapi.Parameter('car_images', openapi.IN_FORM,  # ✅ fixed: now single file
+                              type=openapi.TYPE_FILE,
+                              description="Car image",
+                              required=True),
             openapi.Parameter('vehicle_registration', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
-            openapi.Parameter('vehicle_type', openapi.IN_FORM, 
-                             type=openapi.TYPE_STRING,
-                             enum=[choice[0] for choice in Driver.VEHICLE_CHOICES],
-                             required=True),
-            openapi.Parameter('vehicle_load_capacity', openapi.IN_FORM, 
-                             type=openapi.TYPE_NUMBER,
-                             description="Between 0.5 and 10.0 tons",
-                             required=True),
+            openapi.Parameter('vehicle_type', openapi.IN_FORM,
+                              type=openapi.TYPE_STRING,
+                              enum=[choice[0] for choice in Driver.VEHICLE_CHOICES],
+                              required=True),
+            openapi.Parameter('vehicle_load_capacity', openapi.IN_FORM,
+                              type=openapi.TYPE_NUMBER,
+                              description="Between 0.5 and 10.0 tons",
+                              required=True),
         ],
         responses={
             200: openapi.Response(description="KYC updated successfully."),
@@ -671,7 +670,5 @@ class DriverKYCUpdateView(APIView):
             send_kyc_submission_email(driver.email)
             return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
 

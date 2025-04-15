@@ -202,17 +202,17 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer for updating KYC details for a driver.
     Validates first name, last name, physical address, phone number, profile picture,
-    driver license, car images, vehicle registration number, vehicle type, and load capacity.
+    driver license, car image, vehicle registration number, vehicle type, and load capacity.
     """
     phone_number = PhoneNumberField(required=True)
     profile_pic = serializers.ImageField(required=True)  # Profile picture is now required
     license_image = serializers.ImageField(required=True, write_only=True, help_text="Upload a picture of your driver license.")
     car_images = serializers.ListField(
         child=serializers.ImageField(),
-        min_length=2,
-        max_length=2,
+        min_length=1,
+        max_length=1,
         required=True,
-        help_text="Upload exactly 2 images of your vehicle."
+        help_text="Upload a vehicle image."
     )
     vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
     vehicle_load_capacity = serializers.DecimalField(required=True, min_value=0.5, max_value=10.0, max_digits=5, decimal_places=2)
@@ -278,17 +278,17 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_car_images(self, value):
-        if len(value) != 2:
-            raise serializers.ValidationError("Please upload exactly 2 car images.")
+        if len(value) != 1:
+            raise serializers.ValidationError("Please upload exactly 1 car image.")
         for image in value:
-            # Ensure car images are images and within the file size limit
+            # Ensure car image is an image and within the file size limit
             max_size_mb = 2  # Limit size to 2MB
             if image.size > max_size_mb * 1024 * 1024:
-                raise serializers.ValidationError(f"Each car image must not exceed {max_size_mb} MB.")
+                raise serializers.ValidationError(f"Car image must not exceed {max_size_mb} MB.")
             allowed_extensions = ['jpg', 'jpeg', 'png']
             ext = image.name.split('.')[-1].lower()
             if ext not in allowed_extensions:
-                raise serializers.ValidationError("Car images must be in JPEG or PNG format.")
+                raise serializers.ValidationError("Car image must be in JPEG or PNG format.")
         return value
 
     def validate_vehicle_registration(self, value):
@@ -326,7 +326,7 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
             except Exception as e:
                 raise serializers.ValidationError(f"Failed to upload license image: {str(e)}")
         
-        # Handle uploading car images to Cloudinary if provided
+        # Handle uploading car image to Cloudinary if provided
         if car_images:
             uploaded_car_images = []
             for image in car_images:
@@ -335,9 +335,8 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
                     uploaded_car_images.append(uploaded_image['secure_url'])  # Cloudinary URL of the uploaded image
                 except Exception as e:
                     raise serializers.ValidationError(f"Failed to upload car image: {str(e)}")
-            instance.car_images = uploaded_car_images  # Assign the uploaded URLs to the car_images field
-
+            instance.car_images = uploaded_car_images  # Assign the uploaded URL to the car_images field
+        
         # Save the instance
         instance.save()
         return instance
-
