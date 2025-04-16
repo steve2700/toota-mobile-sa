@@ -204,7 +204,6 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
     Validates first name, last name, physical address, phone number, profile picture,
     driver license, car image, vehicle registration number, vehicle type, and load capacity.
     """
-
     phone_number = PhoneNumberField(required=True)
     profile_pic = serializers.ImageField(required=True)
     license_image = serializers.ImageField(
@@ -218,8 +217,10 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         help_text="Upload a vehicle image."
     )
     vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
-    vehicle_load_capacity = serializers.DecimalField(
-        required=True, min_value=0.5, max_value=10.0, max_digits=5, decimal_places=2
+    vehicle_load_capacity = serializers.ChoiceField(
+        choices=Driver.LOAD_CAPACITY_CHOICES,
+        required=True,
+        help_text="Select the load capacity of your vehicle"
     )
 
     class Meta:
@@ -304,11 +305,9 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_vehicle_load_capacity(self, value):
-        try:
-            if not (0.5 <= float(value) <= 10.0):
-                raise serializers.ValidationError("Vehicle load capacity must be between 0.5 and 10 tons.")
-        except (ValueError, TypeError):
-            raise serializers.ValidationError("Invalid vehicle load capacity format.")
+        allowed = [choice[0] for choice in Driver.LOAD_CAPACITY_CHOICES]
+        if value not in allowed:
+            raise serializers.ValidationError(f"Vehicle load capacity must be one of: {', '.join(allowed)}")
         return value
 
     def update(self, instance, validated_data):
