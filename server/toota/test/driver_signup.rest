@@ -2,6 +2,6 @@ post http://localhost:8000/auth/signup/driver/
 Content-Type: application/json
 
 {
-    "email": "oladevcoolbooks@gmail.com",
+    "email": "fyidweb3lord@gmail.com",
     "password": "driver123"
 }

@@ -5,6 +5,8 @@ from django.utils import timezone
 import uuid
 from phonenumber_field.modelfields import PhoneNumberField  # Requires django-phonenumber-field
 from cloudinary.models import CloudinaryField
+from django.db.models import Sum, Count
+
 
 ###############################################################################
 # Base Manager: Shared logic for creating users
@@ -50,7 +52,7 @@ class AbstractCustomUser(AbstractBaseUser, PermissionsMixin):
     profile_pic = CloudinaryField('image', blank=True, null=True)
     phone_number = PhoneNumberField(blank=True, null=True)
     physical_address = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=False)  # Requires verification
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -114,12 +116,10 @@ class Driver(AbstractCustomUser):
     Driver model that extends the abstract custom user with driver-specific fields.
     For driver signup, only email and password are required. Other fields are optional.
     """
-    @property
-    def average_rating(self):
-        ratings = self.ratings.all()
-        if not ratings.exists():
-            return None
-        return round(sum(r.rating for r in ratings) / ratings.count(), 2)
+
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    rating_count = models.PositiveIntegerField(default=0)
+
 
     license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     license_expiry = models.DateField(null=True, blank=True)
@@ -143,6 +143,15 @@ class Driver(AbstractCustomUser):
     is_online = models.BooleanField(default=False)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def update_rating(self):
+        result = self.ratings.aggregate(total_value=Sum('rating'), total_count=Count('id'))
+        
+        # Check if there are any ratings
+        if result['total_count'] > 0:
+            self.average_rating = result['total_value'] / result['total_count']
+            self.rating_count = result['total_count']
+        self.save()
 
     groups = models.ManyToManyField(
         'auth.Group',

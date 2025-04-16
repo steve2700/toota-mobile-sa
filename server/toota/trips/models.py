@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import MinLengthValidator
 import uuid
 from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 User = get_user_model()  # Get the user model dynamically
 class Trip(models.Model):
@@ -102,3 +104,11 @@ class DriverRating(models.Model):
     
     def __str__(self):
         return f"Rating for {self.driver.email} by {self.user.email if self.user else 'Anonymous'}: {self.rating}"
+
+@receiver(post_save, sender=DriverRating)
+def update_driver_rating_on_save(sender, instance, **kwargs):
+    instance.driver.update_rating()
+
+@receiver(post_delete, sender=DriverRating)
+def update_driver_rating_on_delete(sender, instance, **kwargs):
+    instance.driver.update_rating()
