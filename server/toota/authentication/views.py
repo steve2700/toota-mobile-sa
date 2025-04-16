@@ -615,10 +615,8 @@ class DriverKYCUpdateView(APIView):
     )
     def get(self, request):
         driver = request.user
-
         if not isinstance(driver, Driver):
             return Response({"error": "You are not authorized as a driver."}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = DriverKYCUpdateSerializer(driver)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -647,8 +645,9 @@ class DriverKYCUpdateView(APIView):
                               enum=[choice[0] for choice in Driver.VEHICLE_CHOICES],
                               required=True),
             openapi.Parameter('vehicle_load_capacity', openapi.IN_FORM,
-                              type=openapi.TYPE_NUMBER,
-                              description="Between 0.5 and 10.0 tons",
+                              type=openapi.TYPE_STRING,
+                              enum=[choice[0] for choice in Driver.LOAD_CAPACITY_CHOICES],
+                              description="Select a load capacity option",
                               required=True),
         ],
         responses={
@@ -661,15 +660,11 @@ class DriverKYCUpdateView(APIView):
     )
     def put(self, request):
         driver = request.user
-
         if not isinstance(driver, Driver):
             return Response({"error": "You are not authorized as a driver."}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = DriverKYCUpdateSerializer(driver, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             send_kyc_submission_email(driver.email)
             return Response({"message": "Driver KYC updated successfully."}, status=status.HTTP_200_OK)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
