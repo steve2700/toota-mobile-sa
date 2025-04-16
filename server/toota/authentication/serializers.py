@@ -198,30 +198,18 @@ class ResendOTPSerializer(serializers.Serializer):
     """
     email = serializers.EmailField()
 
+
 class DriverKYCUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer for updating KYC details for a driver.
-    Validates first name, last name, physical address, phone number, profile picture,
-    driver license, car image, vehicle registration number, vehicle type, and load capacity.
     """
+
     phone_number = PhoneNumberField(required=True)
     profile_pic = serializers.ImageField(required=True)
-    license_image = serializers.ImageField(
-        required=True, write_only=True, help_text="Upload a picture of your driver license."
-    )
-    car_images = serializers.ListField(
-        child=serializers.ImageField(),
-        min_length=1,
-        max_length=1,
-        required=True,
-        help_text="Upload a vehicle image."
-    )
+    license_image = serializers.ImageField(required=True, write_only=True)
+    car_image = serializers.ImageField(required=True)
     vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
-    vehicle_load_capacity = serializers.ChoiceField(
-        choices=Driver.LOAD_CAPACITY_CHOICES,
-        required=True,
-        help_text="Select the load capacity of your vehicle"
-    )
+    vehicle_load_capacity = serializers.ChoiceField(choices=Driver.LOAD_CAPACITY_CHOICES, required=True)
 
     class Meta:
         model = Driver
@@ -233,63 +221,48 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
             'profile_pic',
             'license_image',
             'vehicle_registration',
-            'car_images',
+            'car_image',
             'vehicle_type',
             'vehicle_load_capacity',
         ]
 
+    def _validate_image(self, image, field_name):
+        max_size_mb = 2
+        if image.size > max_size_mb * 1024 * 1024:
+            raise serializers.ValidationError({field_name: f"{field_name.replace('_', ' ').capitalize()} must not exceed {max_size_mb}MB."})
+        ext = image.name.split('.')[-1].lower()
+        if ext not in ['jpg', 'jpeg', 'png']:
+            raise serializers.ValidationError({field_name: f"{field_name.replace('_', ' ').capitalize()} must be in JPEG or PNG format."})
+        return image
+
     def validate_first_name(self, value):
         if not value.isalpha():
-            raise serializers.ValidationError("First name must contain only alphabetic characters.")
+            raise serializers.ValidationError("First name must contain only letters.")
         return value
 
     def validate_last_name(self, value):
         if not value.isalpha():
-            raise serializers.ValidationError("Last name must contain only alphabetic characters.")
+            raise serializers.ValidationError("Last name must contain only letters.")
         return value
 
     def validate_physical_address(self, value):
         if not value.strip():
-            raise serializers.ValidationError("Physical address cannot be empty.")
+            raise serializers.ValidationError("Physical address is required.")
         return value
 
     def validate_phone_number(self, value):
         if Driver.objects.filter(phone_number=value).exclude(id=self.instance.id if self.instance else None).exists():
-            raise serializers.ValidationError("Phone number is already registered.")
+            raise serializers.ValidationError("Phone number already exists.")
         return value
 
     def validate_profile_pic(self, value):
-        max_size_mb = 2
-        if value.size > max_size_mb * 1024 * 1024:
-            raise serializers.ValidationError(f"Profile picture size must not exceed {max_size_mb} MB.")
-        allowed_extensions = ['jpg', 'jpeg', 'png']
-        ext = value.name.split('.')[-1].lower()
-        if ext not in allowed_extensions:
-            raise serializers.ValidationError("Profile picture must be in JPEG or PNG format.")
-        return value
+        return self._validate_image(value, 'profile_pic')
 
     def validate_license_image(self, value):
-        max_size_mb = 2
-        if value.size > max_size_mb * 1024 * 1024:
-            raise serializers.ValidationError(f"License image must not exceed {max_size_mb} MB.")
-        allowed_extensions = ['jpg', 'jpeg', 'png']
-        ext = value.name.split('.')[-1].lower()
-        if ext not in allowed_extensions:
-            raise serializers.ValidationError("License image must be in JPEG or PNG format.")
-        return value
+        return self._validate_image(value, 'license_image')
 
-    def validate_car_images(self, value):
-        if len(value) != 1:
-            raise serializers.ValidationError("Please upload exactly 1 car image.")
-        for image in value:
-            max_size_mb = 2
-            if image.size > max_size_mb * 1024 * 1024:
-                raise serializers.ValidationError(f"Car image must not exceed {max_size_mb} MB.")
-            allowed_extensions = ['jpg', 'jpeg', 'png']
-            ext = image.name.split('.')[-1].lower()
-            if ext not in allowed_extensions:
-                raise serializers.ValidationError("Car image must be in JPEG or PNG format.")
-        return value
+    def validate_car_image(self, value):
+        return self._validate_image(value, 'car_image')
 
     def validate_vehicle_registration(self, value):
         if not value.strip():
@@ -298,41 +271,30 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Vehicle registration already exists.")
         return value
 
-    def validate_vehicle_type(self, value):
-        allowed = [choice[0] for choice in Driver.VEHICLE_CHOICES]
-        if value not in allowed:
-            raise serializers.ValidationError(f"Vehicle type must be one of: {', '.join(allowed)}")
-        return value
-
-    def validate_vehicle_load_capacity(self, value):
-        allowed = [choice[0] for choice in Driver.LOAD_CAPACITY_CHOICES]
-        if value not in allowed:
-            raise serializers.ValidationError(f"Vehicle load capacity must be one of: {', '.join(allowed)}")
-        return value
-
     def update(self, instance, validated_data):
-        car_images = validated_data.pop('car_images', None)
         license_image = validated_data.pop('license_image', None)
+        car_image = validated_data.pop('car_image', None)
 
+        # Assign other fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
+        # Upload license image
         if license_image:
             try:
-                license_image_upload = upload(license_image)
-                instance.license_image = license_image_upload['secure_url']
+                uploaded_license = upload(license_image)
+                instance.license_image = uploaded_license['secure_url']
             except Exception as e:
-                raise serializers.ValidationError(f"Failed to upload license image: {str(e)}")
+                raise serializers.ValidationError({"license_image": f"Upload failed: {str(e)}"})
 
-        if car_images:
-            uploaded_car_images = []
-            for image in car_images:
-                try:
-                    uploaded_image = upload(image)
-                    uploaded_car_images.append(uploaded_image['secure_url'])
-                except Exception as e:
-                    raise serializers.ValidationError(f"Failed to upload car image: {str(e)}")
-            instance.car_images = uploaded_car_images
+        # Upload car image
+        if car_image:
+            try:
+                uploaded_url = upload(car_image)['secure_url']
+                instance.car_images = [uploaded_url]  # still saving as a list if the DB expects it
+            except Exception as e:
+                raise serializers.ValidationError({"car_image": f"Upload failed: {str(e)}"})
 
         instance.save()
         return instance
+        
