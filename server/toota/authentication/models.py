@@ -89,14 +89,33 @@ class Driver(AbstractCustomUser):
         ('Bakkie', 'Bakkie'),
         ('8 ton Truck', '8 ton Truck'),
     ]
+    
+    # Added load capacity choices
+    LOAD_CAPACITY_CHOICES = [
+        ('0.5', '0.5 ton'),
+        ('1.0', '1.0 ton'),
+        ('1.5', '1.5 tons'),
+        ('2.0', '2.0 tons'),
+        ('4.0', '4.0 tons'),
+        ('8.0', '8.0 tons'),
+        ('10.0', '10.0 tons'),
+    ]
+    
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
     # Changed JSONField default to use a function instead of list literal
     car_image = CloudinaryField('image', null=True, blank=True)
     license_image = CloudinaryField('image', null=True, blank=True)
-    vehicle_load_capacity = models.DecimalField(
-        max_digits=4, decimal_places=1, help_text="Capacity in tons (e.g., 1.5)", null=True, blank=True
+    
+    # Changed from DecimalField to CharField with choices
+    vehicle_load_capacity = models.CharField(
+        max_length=10, 
+        choices=LOAD_CAPACITY_CHOICES,
+        null=True, 
+        blank=True,
+        help_text="Select the load capacity of your vehicle"
     )
+    
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
@@ -128,9 +147,7 @@ class Driver(AbstractCustomUser):
 
     def clean(self):
         super().clean()
-        if self.vehicle_load_capacity is not None:
-            if not (0.5 <= float(self.vehicle_load_capacity) <= 10.0):
-                raise ValidationError({'vehicle_load_capacity': _("Vehicle load capacity must be between 0.5 and 10 tons.")})
+        # Removed the load capacity validation since we now use predefined choices
         if self.vehicle_registration:
             if Driver.objects.exclude(id=self.id).filter(vehicle_registration=self.vehicle_registration).exists():
                 raise ValidationError({'vehicle_registration': _("This vehicle registration number is already in use.")})
