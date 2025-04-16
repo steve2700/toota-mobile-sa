@@ -104,7 +104,7 @@ class Driver(AbstractCustomUser):
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
     # Changed JSONField default to use a function instead of list literal
-    car_image = CloudinaryField('image', null=True, blank=True)
+    car_images = CloudinaryField('image', null=True, blank=True)
     license_image = CloudinaryField('image', null=True, blank=True)
     
     # Changed from DecimalField to CharField with choices
