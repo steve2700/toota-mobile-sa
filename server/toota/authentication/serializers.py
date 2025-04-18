@@ -4,6 +4,8 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from phonenumber_field.serializerfields import PhoneNumberField
 from .models import User, Driver
+from cloudinary.uploader import upload
+
 
 ###############################################################################
 # Base Serializers
@@ -111,7 +113,7 @@ class KYCUpdateSerializer(serializers.ModelSerializer):
     Validates first name, last name, physical address, phone number, and profile picture.
     """
     phone_number = PhoneNumberField(required=True)
-    profile_pic = serializers.FileField(required=False, allow_null=True)
+    profile_pic = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -195,3 +197,117 @@ class ResendOTPSerializer(serializers.Serializer):
     Only requires the users email.
     """
     email = serializers.EmailField()
+
+
+class DriverKYCUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating KYC details for a driver.
+    """
+
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+    phone_number = PhoneNumberField(required=True)
+    physical_address = serializers.CharField(required=True)
+    profile_pic = serializers.ImageField(required=True)
+    license_image = serializers.ImageField(required=True, write_only=True)
+    car_image = serializers.ImageField(required=True)
+    vehicle_registration = serializers.CharField(required=True)
+    vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
+    vehicle_load_capacity = serializers.ChoiceField(choices=Driver.LOAD_CAPACITY_CHOICES, required=True)
+
+    class Meta:
+        model = Driver
+        fields = [
+            'first_name',
+            'last_name',
+            'phone_number',
+            'physical_address',
+            'profile_pic',
+            'license_image',
+            'vehicle_registration',
+            'car_image',
+            'vehicle_type',
+            'vehicle_load_capacity',
+        ]
+
+    def _validate_image(self, image, field_name):
+        max_size_mb = 2
+        if image.size > max_size_mb * 1024 * 1024:
+            raise serializers.ValidationError({field_name: f"{field_name.replace('_', ' ').capitalize()} must not exceed {max_size_mb}MB."})
+        ext = image.name.split('.')[-1].lower()
+        if ext not in ['jpg', 'jpeg', 'png']:
+            raise serializers.ValidationError({field_name: f"{field_name.replace('_', ' ').capitalize()} must be in JPEG or PNG format."})
+        return image
+
+    def validate_first_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("First name is required.")
+        if not value.isalpha():
+            raise serializers.ValidationError("First name must contain only letters.")
+        return value
+
+    def validate_last_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Last name is required.")
+        if not value.isalpha():
+            raise serializers.ValidationError("Last name must contain only letters.")
+        return value
+
+    def validate_physical_address(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Physical address is required.")
+        return value
+
+    def validate_phone_number(self, value):
+        if Driver.objects.filter(phone_number=value).exclude(id=self.instance.id if self.instance else None).exists():
+            raise serializers.ValidationError("Phone number already exists.")
+        return value
+
+    def validate_profile_pic(self, value):
+        return self._validate_image(value, 'profile_pic')
+
+    def validate_license_image(self, value):
+        return self._validate_image(value, 'license_image')
+
+    def validate_car_image(self, value):
+        return self._validate_image(value, 'car_image')
+
+    def validate_vehicle_registration(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Vehicle registration is required.")
+        if Driver.objects.filter(vehicle_registration=value).exclude(id=self.instance.id if self.instance else None).exists():
+            raise serializers.ValidationError("Vehicle registration already exists.")
+        return value
+
+    def update(self, instance, validated_data):
+        license_image = validated_data.pop('license_image', None)
+        car_image = validated_data.pop('car_image', None)
+        profile_pic = validated_data.pop('profile_pic', None)
+
+        # Assign other fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if license_image:
+            try:
+                uploaded_license = upload(license_image)
+                instance.license_image = uploaded_license['secure_url']
+            except Exception as e:
+                raise serializers.ValidationError({"license_image": f"Upload failed: {str(e)}"})
+
+        if car_image:
+            try:
+                uploaded_url = upload(car_image)['secure_url']
+                instance.car_image = uploaded_url
+            except Exception as e:
+                raise serializers.ValidationError({"car_image": f"Upload failed: {str(e)}"})
+
+        if profile_pic:
+            try:
+                uploaded_profile = upload(profile_pic)
+                instance.profile_pic = uploaded_profile['secure_url']
+            except Exception as e:
+                raise serializers.ValidationError({"profile_pic": f"Upload failed: {str(e)}"})
+
+        instance.save()
+        return instance        
