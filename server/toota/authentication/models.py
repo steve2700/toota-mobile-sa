@@ -91,24 +91,6 @@ class User(AbstractCustomUser):
         return self.email
 
 ###############################################################################
-# CarImage Model: For storing multiple car images for a driver
-###############################################################################
-class CarImage(models.Model):
-    """
-    Model to store car images for a driver. Each image is linked to a specific driver.
-    """
-    driver = models.ForeignKey(
-        'Driver',
-        on_delete=models.CASCADE,
-        related_name='car_images'
-    )
-    image = CloudinaryField('image')
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Image for {self.driver.email} uploaded on {self.uploaded_at}"
-
-###############################################################################
 # Driver Model (updated for optional KYC fields)
 ###############################################################################
 class Driver(AbstractCustomUser):
@@ -116,13 +98,9 @@ class Driver(AbstractCustomUser):
     Driver model that extends the abstract custom user with driver-specific fields.
     For driver signup, only email and password are required. Other fields are optional.
     """
-
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     rating_count = models.PositiveIntegerField(default=0)
-
-
-    license_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    license_expiry = models.DateField(null=True, blank=True)
+    
     VEHICLE_CHOICES = [
         ('MotorBike', 'MotorBike'),
         ('1 ton Truck', '1 ton Truck'),
@@ -132,9 +110,27 @@ class Driver(AbstractCustomUser):
         ('Bakkie', 'Bakkie'),
         ('8 ton Truck', '8 ton Truck'),
     ]
+    # Added load capacity choices
+    LOAD_CAPACITY_CHOICES = [
+        ('0.5', '0.5 ton'),
+        ('1.0', '1.0 ton'),
+        ('1.5', '1.5 tons'),
+        ('2.0', '2.0 tons'),
+        ('4.0', '4.0 tons'),
+        ('8.0', '8.0 tons'),
+        ('10.0', '10.0 tons'),
+    ]
+    vehicle_load_capacity = models.CharField(
+        max_length=10, 
+        choices=LOAD_CAPACITY_CHOICES,
+        null=True, 
+        blank=True,
+        help_text="Select the load capacity of your vehicle"
+    )
     vehicle_type = models.CharField(max_length=50, choices=VEHICLE_CHOICES, null=True, blank=True)
+    car_image = CloudinaryField('image', null=True, blank=True)
     vehicle_registration = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    number_plate = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    license_image = CloudinaryField('image', null=True, blank=True)
     current_location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
@@ -143,7 +139,7 @@ class Driver(AbstractCustomUser):
     is_online = models.BooleanField(default=False)
     total_trips_completed = models.PositiveIntegerField(default=0)
     earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-
+    
     def update_rating(self):
         result = self.ratings.aggregate(total_value=Sum('rating'), total_count=Count('id'))
         
@@ -152,7 +148,7 @@ class Driver(AbstractCustomUser):
             self.average_rating = result['total_value'] / result['total_count']
             self.rating_count = result['total_count']
         self.save()
-
+        
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='driver_users',
@@ -167,11 +163,31 @@ class Driver(AbstractCustomUser):
         help_text=_('Specific permissions for this driver.'),
         verbose_name=_('user permissions')
     )
-
+    
     objects = BaseCustomUserManager()
-
+    
     def __str__(self):
-        return f"{self.email} - {self.vehicle_type or 'No Vehicle Data'}"
+        return f"{self.email} - {self.vehicle_type}" if self.vehicle_type else self.email
+        
+    def clean(self):
+        super().clean()
+        # Removed the load capacity validation since we now use predefined choices
+        if self.vehicle_registration:
+            if Driver.objects.exclude(id=self.id).filter(vehicle_registration=self.vehicle_registration).exists():
+                raise ValidationError({'vehicle_registration': _("This vehicle registration number is already in use.")})
+                
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Ensure clean() is called before saving
+        super().save(*args, **kwargs)
+        
+    def update_location(self, latitude, longitude):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.current_location = f"Latitude: {latitude}, Longitude: {longitude}"
+        self.save()
+
+
+   
 
 ###############################################################################
 # OTP Model: For handling email verification (shared by Users and Drivers)
