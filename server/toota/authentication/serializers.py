@@ -204,10 +204,14 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
     Serializer for updating KYC details for a driver.
     """
 
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
     phone_number = PhoneNumberField(required=True)
+    physical_address = serializers.CharField(required=True)
     profile_pic = serializers.ImageField(required=True)
     license_image = serializers.ImageField(required=True, write_only=True)
     car_image = serializers.ImageField(required=True)
+    vehicle_registration = serializers.CharField(required=True)
     vehicle_type = serializers.ChoiceField(choices=Driver.VEHICLE_CHOICES, required=True)
     vehicle_load_capacity = serializers.ChoiceField(choices=Driver.LOAD_CAPACITY_CHOICES, required=True)
 
@@ -236,11 +240,15 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
         return image
 
     def validate_first_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("First name is required.")
         if not value.isalpha():
             raise serializers.ValidationError("First name must contain only letters.")
         return value
 
     def validate_last_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Last name is required.")
         if not value.isalpha():
             raise serializers.ValidationError("Last name must contain only letters.")
         return value
@@ -274,12 +282,12 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         license_image = validated_data.pop('license_image', None)
         car_image = validated_data.pop('car_image', None)
+        profile_pic = validated_data.pop('profile_pic', None)
 
         # Assign other fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # Upload license image
         if license_image:
             try:
                 uploaded_license = upload(license_image)
@@ -287,14 +295,19 @@ class DriverKYCUpdateSerializer(serializers.ModelSerializer):
             except Exception as e:
                 raise serializers.ValidationError({"license_image": f"Upload failed: {str(e)}"})
 
-        # Upload car image
         if car_image:
             try:
                 uploaded_url = upload(car_image)['secure_url']
-                instance.car_images = [uploaded_url]  # still saving as a list if the DB expects it
+                instance.car_image = uploaded_url
             except Exception as e:
                 raise serializers.ValidationError({"car_image": f"Upload failed: {str(e)}"})
 
+        if profile_pic:
+            try:
+                uploaded_profile = upload(profile_pic)
+                instance.profile_pic = uploaded_profile['secure_url']
+            except Exception as e:
+                raise serializers.ValidationError({"profile_pic": f"Upload failed: {str(e)}"})
+
         instance.save()
-        return instance
-        
+        return instance        

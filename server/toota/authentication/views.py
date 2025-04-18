@@ -635,7 +635,7 @@ class DriverKYCUpdateView(APIView):
             openapi.Parameter('physical_address', openapi.IN_FORM, type=openapi.TYPE_STRING, required=True),
             openapi.Parameter('profile_pic', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
             openapi.Parameter('license_image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True),
-            openapi.Parameter('car_images', openapi.IN_FORM,
+            openapi.Parameter('car_image', openapi.IN_FORM,
                               type=openapi.TYPE_FILE,
                               description="Car image",
                               required=True),
