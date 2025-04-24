@@ -9,7 +9,6 @@
   - [Apply Migrations](#4-apply-migrations)
   - [Start the Server](#5-start-the-server)
 - [API Documentation](#api-documentation)
-- [Authentication and Endpoints](#authentication-and-endpoints)
 - [Environment Variables Setup](#environment-variables-setup)
   - [Overview of `.env` File](#overview-of-env-file)
   - [How to Set Up Email Credentials](#how-to-set-up-email-credentials)
@@ -24,8 +23,8 @@
    - [Driver Management](#driver-management)
    - [Trip Creation and Management](#trip-creation-and-management)
    - [Payment Processing](#payment-processing)
-   - [Real-Time Notifications (WebSockets)](#real-time-notifications-websockets)
-   - [Google Maps Integration](#google-maps-integration)
+   
+   -
 
  [Testing](#testing)
    - [Unit Testing](#unit-testing)
