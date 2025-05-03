@@ -425,12 +425,19 @@ class ChangePasswordView(APIView):
 
 
 class CommonVerifyEmailView(APIView):
-    permission_classes = []  # Ensures no authentication required
+    permission_classes = []  # No auth required
 
     """
     Common endpoint to verify a user's email (for both client users and drivers).
-    Expects 'email' and 'otp' in the request.
+    Expects 'email' and 'otp' in the request. Returns JWT tokens on success.
     """
+
+    def get_tokens_for_user(self, user):
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
 
     @swagger_auto_schema(
         request_body=openapi.Schema(
@@ -442,20 +449,26 @@ class CommonVerifyEmailView(APIView):
             required=['email', 'otp']
         ),
         responses={
-            200: "Email verified successfully.",
+            200: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "message": openapi.Schema(type=openapi.TYPE_STRING),
+                    "access": openapi.Schema(type=openapi.TYPE_STRING),
+                    "refresh": openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            ),
             400: "Invalid or expired OTP, or email not found."
         }
     )
     def post(self, request):
         email = request.data.get("email")
         otp_input = request.data.get("otp")
+
         if not email or not otp_input:
             return Response({"error": "Email and OTP are required."},
                             status=status.HTTP_400_BAD_REQUEST)
-        
 
-        # Try to find the user in the User model; if not found, try Driver.
-
+        # Try to find the user in User model; else check Driver.
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -464,37 +477,35 @@ class CommonVerifyEmailView(APIView):
             except Driver.DoesNotExist:
                 return Response({"error": "User not found."},
                                 status=status.HTTP_404_NOT_FOUND)
-        
 
-
-        # Ensure an OTP instance exists for this user.
-
+        # Ensure OTP instance exists
         try:
             otp_instance = user_obj.otp
         except Exception:
             return Response({"error": "No OTP found for this user."},
                             status=status.HTTP_400_BAD_REQUEST)
-        
 
+        # Validate OTP
         otp_validity_duration = timedelta(minutes=60)
-
-        # Set OTP validity duration to 60 minutes (1 hour)
-        otp_validity_duration = timedelta(minutes=60)
-        
-        # Compare the provided OTP with the stored OTP code and check expiration.
-
         if otp_instance.code != otp_input or (now() - otp_instance.created_at) > otp_validity_duration:
             return Response({"error": "Invalid or expired OTP."},
                             status=status.HTTP_400_BAD_REQUEST)
-        
 
-        # OTP is valid; activate the user and remove the OTP record.
-
+        # OTP is valid — activate user and delete OTP
         user_obj.is_active = True
         otp_instance.delete()
         user_obj.save()
-        return Response({"message": "Email verified successfully."},
-                        status=status.HTTP_200_OK)
+
+        # Return JWT tokens
+        tokens = self.get_tokens_for_user(user_obj)
+
+        return Response({
+            "message": "Email verified successfully.",
+            "access": tokens["access"],
+            "refresh": tokens["refresh"]
+        }, status=status.HTTP_200_OK)
+
+
 
 class ResendVerificationCodeView(APIView):
     permission_classes = []
